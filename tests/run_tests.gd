@@ -8,6 +8,7 @@ extends SceneTree
 const GameData := preload("res://core/data/game_data.gd")
 const ScriptedBattle := preload("res://core/scripted/scripted_battle.gd")
 const LineWrap := preload("res://core/text/line_wrap.gd")
+const FrameStrip := preload("res://core/art/frame_strip.gd")
 
 var _passed: int = 0
 var _failed: int = 0
@@ -25,6 +26,9 @@ func _initialize() -> void:
 		_test_validator_catches_mistakes()
 		_test_prologue_art_exists()
 	_test_line_wrap()
+	_test_frame_strip()
+	_test_vfx_settings()
+	_test_delivered_strips()
 	print("\n測試結果：通過 %d，失敗 %d" % [_passed, _failed])
 	quit(1 if _failed > 0 else 0)
 
@@ -272,6 +276,108 @@ func _same_dict(a: Dictionary, b: Dictionary) -> bool:
 		if not a.has(key) or not is_equal_approx(float(a[key]), float(b[key])):
 			return false
 	return true
+
+
+## 逐格圖的規則：幾格、播多快、第幾秒顯示第幾格。
+func _test_frame_strip() -> void:
+	_check(FrameStrip.count(3072, 512) == 6 and FrameStrip.count(1024, 1024) == 1 and FrameStrip.count(8192, 1024) == 8,
+		"逐格圖的格數是寬除以高，只有一格也算")
+	_check(FrameStrip.problem(3000, 512) != "" and FrameStrip.problem(512, 768) != "" and FrameStrip.count(3000, 512) == 0,
+		"格子不是正方形的圖會被擋下來")
+
+	# 沒有另外指定：6 格平均排進 0.5 秒，出手點在整段的六成
+	var plain := FrameStrip.timing(6, 0.5, 0.6, {})
+	_check(is_equal_approx(plain["fps"], 12.0) and is_equal_approx(plain["length"], 0.5) and is_equal_approx(plain["impact"], 0.3),
+		"沒有指定時，格子平均排進預設的長度", str(plain))
+	# 美術指定了速度與出手的那一格
+	var written := FrameStrip.timing(8, 0.9, 0.6, {"fps": 16, "impact_frame": 5})
+	_check(is_equal_approx(written["length"], 0.5) and is_equal_approx(written["impact"], 0.25),
+		"照美術寫的每秒格數與出手格來播", str(written))
+	# 只有一格：定格，停滿預設的長度
+	var still := FrameStrip.timing(1, 0.5, 0.6, {})
+	_check(is_equal_approx(still["length"], 0.5) and is_equal_approx(still["impact"], 0.3), "只有一格的圖停滿這個動作的時間", str(still))
+
+	var looped: Array = []
+	var held: Array = []
+	for step in 7:
+		looped.append(FrameStrip.frame_at(step * 0.1 + 0.01, 10.0, 4, FrameStrip.LOOP))
+		held.append(FrameStrip.frame_at(step * 0.1 + 0.01, 10.0, 4, FrameStrip.HOLD))
+	_check(looped == [0, 1, 2, 3, 0, 1, 2], "循環的動作播完接回第一格", str(looped))
+	_check(held == [0, 1, 2, 3, 3, 3, 3], "不循環的動作停在最後一格", str(held))
+	_check(FrameStrip.region(2, 512) == Rect2(1024, 0, 512, 512), "第三格的位置在兩格寬之後")
+
+
+## 特效的播放設定：每個招式用的特效、戰鬥畫面固定會用的特效，都要有設定。
+func _test_vfx_settings() -> void:
+	var missing: Array[String] = []
+	for fx_id: String in GameData.SHARED_FX + ["hit_spark", "charge_aura", "guard", "stagger_mark", "tianmo_guixu"]:
+		if not _data.vfx.has(fx_id):
+			missing.append(fx_id)
+	_check(missing.is_empty(), "共用特效與戰鬥畫面固定用的特效都有播放設定", "缺：" + "、".join(missing))
+	var loops_on_body := true
+	for fx_id: String in _data.vfx:
+		var f: Dictionary = _data.vfx[fx_id]
+		if f.get("loop", false) and f["anchor"] != "body":
+			loops_on_body = false
+	_check(loops_on_body, "循環播放的特效都是套在人身上的")
+
+	var broken := _data.vfx.duplicate(true)
+	broken["slash_sword"]["anchor"] = "sky"
+	broken["palm"]["tint"] = "blue"
+	var checker := GameData.new()
+	checker.load_all()
+	checker.vfx = broken
+	checker.errors.clear()
+	checker._validate()
+	_check(checker.errors.size() == 2, "抓得到寫錯的對位與染色", "；".join(checker.errors))
+
+
+## 已經放進正式資料夾的動作圖與特效圖，尺寸都要合規格（每格正方形、不超過顯示卡載得進去的寬度）。
+## 檔名對不上任何動作或特效的也列出來，多半是打錯字。
+func _test_delivered_strips() -> void:
+	var problems: Array[String] = []
+	var total := 0
+	for character_id: String in DirAccess.get_directories_at("res://assets/characters"):
+		var folder := "res://assets/characters/%s/frames" % character_id
+		var names: Array = GameData.ANIMS + _data.moves.keys()
+		total += _check_frame_folder(folder, names, ["stand.png"], "不是動畫契約裡的動作，也不是招式識別碼", problems)
+	if DirAccess.dir_exists_absolute("res://assets/vfx"):
+		total += _check_frame_folder("res://assets/vfx", _data.vfx.keys(), [], "data/vfx.json 沒有這一組特效", problems)
+	_check(problems.is_empty(), "已交付的動作圖與特效圖都合規格（目前 %d 張）" % total, "；".join(problems))
+
+
+## 檢查一個資料夾裡的逐格圖，回傳檢查了幾張。names 是允許的名稱（動作或特效）。
+func _check_frame_folder(folder: String, names: Array, skip: Array, unknown: String, problems: Array[String]) -> int:
+	var total := 0
+	var sides: Dictionary = {}
+	for file: String in DirAccess.get_files_at(folder):
+		if not file.ends_with(".png") or skip.has(file):
+			continue
+		total += 1
+		var path := "%s/%s" % [folder, file]
+		var image := Image.load_from_file(ProjectSettings.globalize_path(path))
+		if image == null:
+			problems.append("%s：讀不到" % path)
+			continue
+		var base := file.get_basename()
+		var problem := ""
+		if names.has(base):
+			problem = FrameStrip.problem(image.get_width(), image.get_height())
+			if problem == "" and image.get_width() > FrameStrip.MAX_STRIP_WIDTH:
+				problem = "橫排圖寬 %d，超過 %d；請改成一格一個檔" % [image.get_width(), FrameStrip.MAX_STRIP_WIDTH]
+		else:
+			# 一格一個檔：名稱_兩位數序號
+			var cut := base.rfind("_")
+			var owner := base.substr(0, maxi(cut, 0))
+			if cut < 0 or not base.substr(cut + 1).is_valid_int() or base.length() - cut - 1 != 2 or not names.has(owner):
+				problem = unknown
+			else:
+				if not sides.has(owner):
+					sides[owner] = image.get_width()
+				problem = FrameStrip.single_problem(image.get_width(), image.get_height(), int(sides[owner]))
+		if problem != "":
+			problems.append("%s：%s" % [path, problem])
+	return total
 
 
 func _check(condition: bool, name: String, detail: String = "") -> void:

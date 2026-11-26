@@ -13,6 +13,7 @@ const ScriptedBattle := preload("res://core/scripted/scripted_battle.gd")
 const LineWrap := preload("res://core/text/line_wrap.gd")
 const BattleActor := preload("res://scenes/battle/battle_actor.gd")
 const BattleFx := preload("res://scenes/battle/battle_fx.gd")
+const StripFx := preload("res://scenes/battle/strip_fx.gd")
 const DialogueBox := preload("res://scenes/ui/dialogue_box.gd")
 const CommandPanel := preload("res://scenes/ui/command_panel.gd")
 const PartyPanel := preload("res://scenes/ui/party_panel.gd")
@@ -285,7 +286,7 @@ func _beat_act(beat: Dictionary) -> void:
 	# 蓄招
 	var charge := float(beat.get("charge", 0.0))
 	if charge > 0.0:
-		var charging := actor.show_charge(Game.t("UI_CHARGING_FMT") % move_name, charge * CHARGE_TIME_SCALE)
+		var charging := actor.show_charge(Game.t("UI_CHARGING_FMT") % move_name, charge * CHARGE_TIME_SCALE, 1.0, _force_color(move))
 		await charging.finished
 		if _aborted:
 			return
@@ -303,7 +304,8 @@ func _beat_act(beat: Dictionary) -> void:
 	actor.set_gauge(0.0)
 
 	# 近身招式：先衝到目標面前
-	var anim := str(move["anim"])
+	# 招式有專屬的動作圖（檔名是招式識別碼）就用它，沒有的話用招式資料指定的那個通用動作
+	var anim := move_id if actor.has_art(move_id) else str(move["anim"])
 	var melee: bool = str(move["reach"]) == "melee" and not _pinned.has(who)
 	if melee and not targets.is_empty():
 		var target_actor: BattleActor = _actors[targets[0]]
@@ -316,13 +318,25 @@ func _beat_act(beat: Dictionary) -> void:
 
 	var impact := actor.anim_impact_time(anim)
 	var length := actor.play_anim(anim)
-	await _wait(impact)
-	if _aborted:
-		return
+	# 特效有圖的話要提早開始播，它「命中」的那一格才會剛好落在出手點
+	var fx_id := str(move.get("fx", ""))
+	var fx_drawn := StripFx.exists(fx_id)
+	var lead := minf(StripFx.lead_time(fx_id), impact) if fx_drawn else 0.0
+	if impact - lead > 0.0:
+		await _wait(impact - lead)
+		if _aborted:
+			return
+	if fx_drawn:
+		_show_strip_fx(actor, move, targets)
+		if lead > 0.0:
+			await _wait(lead)
+			if _aborted:
+				return
 
 	# 出手點：結算
 	var changes := _battle.apply(beat)
-	_show_move_fx(actor, move, targets)
+	if not fx_drawn:
+		_show_move_fx(actor, move, targets)
 	_show_changes(changes)
 	_refresh_states()
 	if beat.get("shake", false):
@@ -360,9 +374,11 @@ func _beat_command(beat: Dictionary) -> void:
 	_hide_hint()
 	_battle.apply(beat)
 	_show_move_call(Game.t("CMD_GUARD"))
-	for id in _battle.party:
-		(_actors[id] as BattleActor).play_anim("guard")
 	_refresh_states()
+	for id in _battle.party:
+		var actor: BattleActor = _actors[id]
+		if actor.current_loop() != "guard":
+			actor.play_anim("guard")
 	_command_panel.hide_commands()
 	_party_panel.set_active("")
 	await _wait(0.7)
@@ -379,7 +395,7 @@ func _beat_charge(beat: Dictionary) -> void:
 	var move_name := Game.data.move_name(str(beat["move"]))
 	_show_move_call(Game.t("UI_WARNING_FMT") % move_name, UiKit.ENEMY)
 	# 倒數條先跑到七成，等玩家反應；真正出手時再跑完
-	actor.show_charge(Game.t("UI_CHARGING_FMT") % move_name, float(beat["time"]) * CHARGE_TIME_SCALE * 0.5, 0.7)
+	actor.show_charge(Game.t("UI_CHARGING_FMT") % move_name, float(beat["time"]) * CHARGE_TIME_SCALE * 0.5, 0.7, _force_color(Game.data.moves[str(beat["move"])]))
 	_pulse_tint(Color(0.8, 0.1, 0.1), 0.18, 0.5)
 	await _wait(0.9)
 
@@ -559,7 +575,11 @@ func _play_fx(fx: String, beat: Dictionary) -> void:
 				_pinned.append(id)
 			await _wait(0.25)
 			for id in _pinned:
-				(_actors[id] as BattleActor).play_anim("attack_light")
+				var actor: BattleActor = _actors[id]
+				actor.play_anim("attack_light")
+				# 各自兵器的特效（第一招用的那一組）；還沒有圖就不顯示
+				var basic: Dictionary = Game.data.moves[str(Game.data.characters[id]["moves"][0])]
+				StripFx.spawn(_numbers, str(basic["fx"]), target.chest_position(), _force_color(basic), actor.facing())
 			_shake(10.0, 0.3)
 			await _wait(0.5)
 		"release":
@@ -579,6 +599,8 @@ func _play_fx(fx: String, beat: Dictionary) -> void:
 			_collapse_tween.tween_property(_stage, "position", Vector2(6, 7), 0.08)
 			_collapse_tween.tween_property(_tint, "modulate:a", 0.2, 0.5)
 			_collapse_tween.parallel().tween_property(_stage, "position", Vector2(-5, -7), 0.08)
+			# 殷九淵身上的「萬魔歸墟」；還沒有圖就只有上面的泛紅與震動
+			(_actors[_battle.enemies[0]] as BattleActor).set_aura("tianmo_guixu", true)
 		"push_out":
 			# 主角把同伴震出殿外
 			var hero: BattleActor = _actors[_battle.party[0]]
@@ -587,6 +609,7 @@ func _play_fx(fx: String, beat: Dictionary) -> void:
 			_flash(0.5)
 			for i in range(1, _battle.party.size()):
 				var actor: BattleActor = _actors[_battle.party[i]]
+				StripFx.spawn(_numbers, "palm", actor.chest_position(), UiKit.FORCE_COLOR["rou"], -hero.facing())
 				actor.play_anim("hit")
 				actor.move_to(Vector2(-400.0, actor.position.y), 0.45)
 			await _wait(0.5)
@@ -630,14 +653,38 @@ func _show_changes(changes: Array[Dictionary]) -> void:
 			_set_enemy_hp(to, true)
 		if damage:
 			_spawn_number(actor, "-%d" % int(change["amount"]), UiKit.DAMAGE)
+			StripFx.spawn(_numbers, "hit_spark", actor.chest_position())
 			actor.play_anim("down" if to <= 0.0 else "hit")
 		else:
 			_spawn_number(actor, "+%d" % int(change["amount"]), UiKit.HEAL)
 			actor.play_anim("cast")
 
 
-## 出手那一刻的特效。招式資料的 fx 欄位寫明它用哪一組特效（設計文件 15.9）。
-## 特效圖還沒有交付，目前依 fx 換成程式畫的暫用版本：弧光、氣勁、光環，顏色用招式的勁路識別色。
+func _force_color(move: Dictionary) -> Color:
+	return UiKit.FORCE_COLOR.get(str(move.get("force", "")), Color.WHITE)
+
+
+## 招式的特效，用美術交的圖播（assets/vfx/，設計文件 15.9）。招式資料的 fx 欄位寫明它用哪一組。
+## 共用特效每個目標各播一份；招式專屬的大型特效只播一份，放在所有目標的正中。
+func _show_strip_fx(actor: BattleActor, move: Dictionary, targets: Array) -> void:
+	if targets.is_empty():
+		return
+	var fx_id := str(move["fx"])
+	var color := _force_color(move)
+	var on_body: bool = str(Game.data.vfx[fx_id]["anchor"]) == "body"
+	if not Game.data.SHARED_FX.has(fx_id) and not on_body:
+		var center := Vector2.ZERO
+		for target_id: String in targets:
+			center += (_actors[target_id] as BattleActor).chest_position()
+		StripFx.spawn(_numbers, fx_id, center / float(targets.size()), color, actor.facing())
+		return
+	for target_id: String in targets:
+		var target: BattleActor = _actors[target_id]
+		var at := target.position if on_body else target.chest_position()
+		StripFx.spawn(_numbers, fx_id, at, color, actor.facing(), target.frame_size())
+
+
+## 特效圖還沒交的時候，出手那一刻用程式畫的暫用特效：弧光、氣勁、光環，顏色用招式的勁路識別色。
 func _show_move_fx(actor: BattleActor, move: Dictionary, targets: Array) -> void:
 	var heavy: bool = str(move.get("anim", "")) == "attack_heavy"
 	var color: Color = UiKit.FORCE_COLOR.get(str(move.get("force", "")), UiKit.PAPER)
@@ -670,10 +717,10 @@ func _refresh_states() -> void:
 		var actor: BattleActor = _actors[id]
 		var state := str(_battle.units[id]["state"])
 		actor.set_state_tag(Game.t(STATE_TEXT[state]) if STATE_TEXT.has(state) else "")
-		if state == "stagger":
-			actor.play_anim("stagger")
-		elif state == "" and actor.current_loop() in ["guard", "stagger"]:
-			actor.play_anim("idle")
+		# 先開特效再換姿勢：有特效圖的時候，姿勢那邊就不必再用變色頂替
+		actor.set_aura("guard", state == "guard")
+		actor.set_aura("stagger_mark", state == "stagger")
+		actor.set_rest_anim(state if state in ["guard", "stagger"] else "idle")
 
 
 func _spawn_number(actor: BattleActor, text: String, color: Color) -> void:
@@ -929,6 +976,8 @@ func _build_background(scene_name: String) -> void:
 		_background.remove_child(child)
 		child.queue_free()
 	var path := "res://assets/backgrounds/battle/%s.jpg" % scene_name
+	if not ResourceLoader.exists(path):
+		path = path.get_basename() + ".png"
 	if ResourceLoader.exists(path):
 		var image := TextureRect.new()
 		image.name = "Image"

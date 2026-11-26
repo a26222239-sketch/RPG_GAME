@@ -7,6 +7,7 @@ const JsonLoader := preload("res://core/data/json_loader.gd")
 const CHARACTERS_PATH := "res://data/characters.json"
 const MOVES_PATH := "res://data/moves.json"
 const TEXT_PATH := "res://data/text/zh_TW.json"
+const VFX_PATH := "res://data/vfx.json"
 const SCRIPTED_DIR := "res://data/scripted/"
 
 const SIDES := ["party", "enemy"]
@@ -20,10 +21,23 @@ const REACHES := ["melee", "ranged", "self"]
 ## 多個招式共用的特效（設計文件 15.9）。招式的 fx 欄位填這裡的其中一個；
 ## 有專屬特效的招式（絕招）則填招式自己的識別碼。
 const SHARED_FX := ["slash_sword", "slash_blade", "palm", "seal", "heal", "buff", "debuff"]
+## 特效怎麼對位。hit：格子正中對準命中點。body：照角色格子的對位，套在一個人身上。
+const VFX_ANCHORS := ["hit", "body"]
 
 var characters: Dictionary = {}
 var moves: Dictionary = {}
 var texts: Dictionary = {}
+## 特效的播放設定（data/vfx.json）。這是程式這一邊的設定；特效圖本身在 assets/vfx/。
+##   frame         一格在畫面上的邊長（設計解析度的像素）
+##   anchor        對位，見 VFX_ANCHORS
+##   length        播一輪的秒數
+##   loop          循環播放（省略就是播一次）
+##   tint          染色：force 用招式勁路的顏色，none 不染，或直接寫 #rrggbb
+##   impact_frame  第幾格是命中的瞬間（從 1 算起，可省略）；美術可以在 assets/vfx/meta.json 改寫
+##   own_size      套在人身上的特效預設會跟著那個人的格子放大（首領是 1.5 倍）；
+##                 為某一個人量身畫的填 true，照原尺寸顯示
+##   frames        建議的格數，只給需求清單用
+var vfx: Dictionary = {}
 var errors: Array[String] = []
 
 
@@ -33,6 +47,7 @@ func load_all() -> bool:
 	characters = _load_dict(CHARACTERS_PATH)
 	moves = _load_dict(MOVES_PATH)
 	texts = _load_dict(TEXT_PATH)
+	vfx = _load_dict(VFX_PATH)
 	if not errors.is_empty():
 		return false
 	_validate()
@@ -99,6 +114,22 @@ func _validate() -> void:
 		_require_enum(m, "reach", REACHES, where)
 		if not SHARED_FX.has(m.get("fx")) and m.get("fx") != move_id:
 			errors.append("%s：fx 必須是共用特效 %s 之一，或是招式自己的識別碼" % [where, str(SHARED_FX)])
+		elif not vfx.has(m.get("fx")):
+			errors.append("%s：特效 %s 沒有寫在 %s" % [where, str(m.get("fx")), VFX_PATH])
+
+	for fx_id: String in vfx:
+		var f: Variant = vfx[fx_id]
+		var where := "特效 %s" % fx_id
+		if not f is Dictionary:
+			errors.append("%s：必須是物件" % where)
+			continue
+		_require_enum(f, "anchor", VFX_ANCHORS, where)
+		for field: String in ["frame", "length"]:
+			if not (f.get(field) is float or f.get(field) is int) or float(f.get(field)) <= 0.0:
+				errors.append("%s：%s 必須是正數" % [where, field])
+		var tint: Variant = f.get("tint")
+		if not tint is String or not (tint in ["force", "none"] or Color.html_is_valid(str(tint))):
+			errors.append("%s：tint 必須是 force、none 或 #rrggbb" % where)
 
 	for char_id: String in characters:
 		var c: Variant = characters[char_id]

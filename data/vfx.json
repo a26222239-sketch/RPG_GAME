@@ -1,0 +1,21 @@
+{
+  "slash_sword": { "frame": 512, "anchor": "hit", "tint": "force", "length": 0.4, "impact_frame": 3, "frames": "6–10" },
+  "slash_blade": { "frame": 512, "anchor": "hit", "tint": "force", "length": 0.45, "impact_frame": 3, "frames": "6–10" },
+  "palm": { "frame": 512, "anchor": "hit", "tint": "force", "length": 0.45, "impact_frame": 3, "frames": "6–10" },
+  "seal": { "frame": 512, "anchor": "hit", "tint": "force", "length": 0.45, "impact_frame": 3, "frames": "6–10" },
+  "heal": { "frame": 512, "anchor": "body", "tint": "#93E6B5", "length": 0.75, "frames": "6–10" },
+  "buff": { "frame": 512, "anchor": "body", "tint": "none", "length": 0.75, "frames": "6–10" },
+  "debuff": { "frame": 512, "anchor": "body", "tint": "force", "length": 0.6, "frames": "6–10" },
+  "hit_spark": { "frame": 512, "anchor": "hit", "tint": "none", "length": 0.3, "frames": "4–6" },
+  "charge_aura": { "frame": 512, "anchor": "body", "tint": "force", "length": 0.8, "loop": true, "frames": "6–10" },
+  "guard": { "frame": 512, "anchor": "body", "tint": "#72ABE3", "length": 1.0, "loop": true, "frames": "4–8" },
+  "stagger_mark": { "frame": 512, "anchor": "body", "tint": "#F3D58E", "length": 0.8, "loop": true, "frames": "4–8" },
+
+  "yanhui_wanfa": { "frame": 1024, "anchor": "hit", "tint": "none", "length": 1.0, "impact_frame": 3, "frames": "8–12" },
+  "shen_qianren": { "frame": 1024, "anchor": "hit", "tint": "none", "length": 0.8, "impact_frame": 3, "frames": "8–12" },
+  "huo_duanyue": { "frame": 1024, "anchor": "hit", "tint": "none", "length": 0.9, "impact_frame": 3, "frames": "8–12" },
+  "wen_fengxue": { "frame": 1024, "anchor": "hit", "tint": "none", "length": 0.8, "impact_frame": 3, "frames": "8–12" },
+  "wen_bianzhao": { "frame": 1024, "anchor": "hit", "tint": "none", "length": 1.0, "impact_frame": 3, "frames": "8–12" },
+  "tianmo_fushi": { "frame": 1024, "anchor": "hit", "tint": "none", "length": 0.9, "impact_frame": 3, "frames": "8–12" },
+  "tianmo_guixu": { "frame": 1024, "anchor": "body", "tint": "none", "length": 1.2, "loop": true, "own_size": true, "frames": "8–12" }
+}

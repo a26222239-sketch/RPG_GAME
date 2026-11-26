@@ -33,6 +33,12 @@ window/handheld/orientation=4
 
 theme/custom_font="res://assets/fonts/NotoSerifTC-Medium.ttf"
 
+[importer_defaults]
+
+texture={
+"mipmaps/generate": true
+}
+
 [input_devices]
 
 pointing/emulate_touch_from_mouse=false

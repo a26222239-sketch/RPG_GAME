@@ -36,14 +36,13 @@ SHARED_FX_TEXT = {
     "slash_sword": "劍光", "slash_blade": "刀光", "palm": "掌勁", "seal": "點穴", "heal": "治療", "buff": "增益", "debuff": "減益",
     "hit_spark": "受擊火花", "charge_aura": "蓄招氣場（循環）", "guard": "守勢", "stagger_mark": "破綻標記",
 }
-# 每個動作建議的格數，以及會不會循環（設計文件 15.5）
+# 每個動作建議的格數，以及播完之後循環還是停在最後一格（設計文件 15.5）
 ANIM_FRAMES = {
     "idle": 6, "ready": 4, "charge": 6, "attack_light": 6, "attack_heavy": 8, "cast": 6,
     "hit": 3, "guard": 3, "stagger": 4, "down": 6, "victory": 6, "walk": 8,
 }
-LOOPING = {"idle", "ready", "charge", "stagger", "walk", "charge_aura", "guard", "stagger_mark"}
-# 共用特效的格數；沒列的是 6–10 格
-FX_FRAMES = {"hit_spark": "4–6", "guard": "4–8", "stagger_mark": "4–8"}
+ANIM_LOOPING = {"idle", "ready", "charge", "stagger", "walk"}
+ANIM_HOLDING = {"guard", "down"}
 # 劇本裡的演出對應到哪一組特效：大殿崩解就是殷九淵的「萬魔歸墟」
 STAGE_FX = {"collapse": "tianmo_guixu"}
 FORCE_TEXT = {"gang": "剛", "rou": "柔", "kuai": "快"}
@@ -69,13 +68,15 @@ def load(path: Path):
 
 def status(relative: str) -> str:
     stem = relative.rsplit(".", 1)[0]
-    for extension in (".png", ".jpg"):
-        if (ASSETS / (stem + extension)).exists():
+    # 逐格圖也可以一格一個檔（名稱_01.png 起），有第一格就算有交
+    endings = (".png", ".jpg", "_01.png")
+    for ending in endings:
+        if (ASSETS / (stem + ending)).exists():
             return "有"
     incoming = ASSETS / "incoming"
     if incoming.exists():
-        for extension in (".png", ".jpg"):
-            if any(incoming.glob("**/" + stem + extension)):
+        for ending in endings:
+            if any(incoming.glob("**/" + stem + ending)):
                 return "待驗收"
     return "缺"
 
@@ -96,6 +97,7 @@ def main() -> int:
     moves = load(DATA / "moves.json")
     texts = load(DATA / "text" / "zh_TW.json")
     texts = texts.get("texts", texts)
+    vfx = load(DATA / "vfx.json")  # 特效的格子大小、建議格數、循環與否，和遊戲用的是同一份設定
 
     def name_of(unit_id: str) -> str:
         return texts.get(characters[unit_id]["name"], unit_id)
@@ -176,8 +178,10 @@ def main() -> int:
         elif fx in STAGE_FX:
             add(effects, STAGE_FX[fx], f"{name_of(enemies[0])}發動「{move_name(STAGE_FX[fx])}」，大殿崩解")
 
-    def loop_note(key: str) -> str:
-        return "，循環" if key in LOOPING else ""
+    def loop_note(anim: str) -> str:
+        if anim in ANIM_LOOPING:
+            return "，循環"
+        return "，停在最後一格" if anim in ANIM_HOLDING else ""
 
     sections: list[tuple[str, list[tuple[str, str, str]]]] = []
 
@@ -203,8 +207,8 @@ def main() -> int:
         shared = effect in SHARED_FX_TEXT
         title = SHARED_FX_TEXT[effect] if shared else f"絕招「{move_name(effect)}」"
         where = "；".join(effects[effect][:3]) + ("…" if len(effects[effect]) > 3 else "")
-        looping = loop_note(effect) or ("，循環" if effect in STAGE_FX.values() else "")
-        spec = (f"{FX_FRAMES.get(effect, '6–10')} 格，每格 512×512{looping}" if shared else f"8–12 格，每格 1024×1024{looping}")
+        setting = vfx[effect]
+        spec = f"{setting['frames']} 格，每格 {setting['frame']}×{setting['frame']}" + ("，循環" if setting.get("loop") else "")
         rows.append((f"vfx/{effect}.png", spec, f"{title}：{where}"))
     sections.append(("特效", rows))
 
