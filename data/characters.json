@@ -1,0 +1,43 @@
+{
+  "yanhui_peak": {
+    "name": "CHAR_YANHUI",
+    "side": "party",
+    "color": "#4f7fd6",
+    "hp_max": 9800,
+    "mp_max": 2400,
+    "moves": ["yanhui_zhici", "yanhui_huifeng", "yanhui_ningqi", "yanhui_wanfa"]
+  },
+  "shen_peak": {
+    "name": "CHAR_SHEN",
+    "side": "party",
+    "color": "#5fb8c9",
+    "hp_max": 8200,
+    "mp_max": 2100,
+    "moves": ["shen_dianxing", "shen_duanliu", "shen_feihua", "shen_qingshen", "shen_qianren"]
+  },
+  "huo_peak": {
+    "name": "CHAR_HUO",
+    "side": "party",
+    "color": "#c98a4b",
+    "hp_max": 11500,
+    "mp_max": 1800,
+    "moves": ["huo_hengzhan", "huo_bengshan", "huo_xueren", "huo_duanyue"]
+  },
+  "wen_peak": {
+    "name": "CHAR_WEN",
+    "side": "party",
+    "color": "#7dbb7a",
+    "hp_max": 8600,
+    "mp_max": 3000,
+    "moves": ["wen_dianmai", "wen_huichun", "wen_huxin", "wen_fengxue", "wen_bianzhao"]
+  },
+  "tianmo": {
+    "name": "CHAR_TIANMO",
+    "side": "enemy",
+    "boss": true,
+    "color": "#8f2447",
+    "hp_max": 68000,
+    "mp_max": 9000,
+    "moves": ["tianmo_palm", "tianmo_sleeve", "tianmo_repel", "tianmo_fushi", "tianmo_guixu"]
+  }
+}

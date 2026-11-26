@@ -1,0 +1,29 @@
+{
+  "yanhui_zhici": { "name": "MOVE_YANHUI_ZHICI", "kind": "attack", "force": "kuai", "anim": "attack_light", "reach": "melee" },
+  "yanhui_huifeng": { "name": "MOVE_YANHUI_HUIFENG", "kind": "attack", "force": "gang", "anim": "attack_heavy", "reach": "melee" },
+  "yanhui_ningqi": { "name": "MOVE_YANHUI_NINGQI", "kind": "buff", "force": "", "anim": "cast", "reach": "self" },
+  "yanhui_wanfa": { "name": "MOVE_YANHUI_WANFA", "kind": "attack", "force": "rou", "anim": "attack_heavy", "reach": "melee" },
+
+  "shen_dianxing": { "name": "MOVE_SHEN_DIANXING", "kind": "attack", "force": "kuai", "anim": "attack_light", "reach": "melee" },
+  "shen_duanliu": { "name": "MOVE_SHEN_DUANLIU", "kind": "attack", "force": "kuai", "anim": "attack_light", "reach": "melee" },
+  "shen_feihua": { "name": "MOVE_SHEN_FEIHUA", "kind": "attack", "force": "kuai", "anim": "attack_heavy", "reach": "ranged" },
+  "shen_qingshen": { "name": "MOVE_SHEN_QINGSHEN", "kind": "buff", "force": "", "anim": "cast", "reach": "self" },
+  "shen_qianren": { "name": "MOVE_SHEN_QIANREN", "kind": "attack", "force": "kuai", "anim": "attack_heavy", "reach": "melee" },
+
+  "huo_hengzhan": { "name": "MOVE_HUO_HENGZHAN", "kind": "attack", "force": "gang", "anim": "attack_light", "reach": "melee" },
+  "huo_bengshan": { "name": "MOVE_HUO_BENGSHAN", "kind": "attack", "force": "gang", "anim": "attack_heavy", "reach": "melee" },
+  "huo_xueren": { "name": "MOVE_HUO_XUEREN", "kind": "attack", "force": "gang", "anim": "attack_light", "reach": "melee" },
+  "huo_duanyue": { "name": "MOVE_HUO_DUANYUE", "kind": "attack", "force": "gang", "anim": "attack_heavy", "reach": "melee" },
+
+  "wen_dianmai": { "name": "MOVE_WEN_DIANMAI", "kind": "attack", "force": "rou", "anim": "attack_light", "reach": "melee" },
+  "wen_huichun": { "name": "MOVE_WEN_HUICHUN", "kind": "heal", "force": "", "anim": "cast", "reach": "ranged" },
+  "wen_huxin": { "name": "MOVE_WEN_HUXIN", "kind": "buff", "force": "", "anim": "cast", "reach": "ranged" },
+  "wen_fengxue": { "name": "MOVE_WEN_FENGXUE", "kind": "control", "force": "rou", "anim": "cast", "reach": "ranged" },
+  "wen_bianzhao": { "name": "MOVE_WEN_BIANZHAO", "kind": "heal", "force": "", "anim": "cast", "reach": "ranged" },
+
+  "tianmo_palm": { "name": "MOVE_TIANMO_PALM", "kind": "attack", "force": "gang", "anim": "attack_light", "reach": "melee" },
+  "tianmo_sleeve": { "name": "MOVE_TIANMO_SLEEVE", "kind": "attack", "force": "rou", "anim": "attack_light", "reach": "ranged" },
+  "tianmo_repel": { "name": "MOVE_TIANMO_REPEL", "kind": "attack", "force": "gang", "anim": "attack_light", "reach": "ranged" },
+  "tianmo_fushi": { "name": "MOVE_TIANMO_FUSHI", "kind": "attack", "force": "gang", "anim": "attack_heavy", "reach": "ranged" },
+  "tianmo_guixu": { "name": "MOVE_TIANMO_GUIXU", "kind": "attack", "force": "", "anim": "cast", "reach": "self" }
+}

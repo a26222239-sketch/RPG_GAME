@@ -17,3 +17,7 @@ desktop.ini
 # Python
 __pycache__/
 *.pyc
+
+# Godot
+.godot/
+*.translation
