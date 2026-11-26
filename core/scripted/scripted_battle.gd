@@ -91,6 +91,11 @@ static func validate(script: Dictionary, characters: Dictionary, moves: Dictiona
 			if not unit_ids.has(str(beat.get("who", ""))):
 				errors.append("%s：who「%s」不在這場戰鬥裡" % [at, str(beat.get("who", ""))])
 				continue
+		if type == "say" and beat.has("face"):
+			# 對話框的頭像預設用說話者自己的；face 可以指定換成另一套造型（例如重生後的燕回）
+			var face: Variant = beat["face"]
+			if not face is String or not _is_identifier(face):
+				errors.append("%s：face 必須是造型的識別碼（英文小寫、數字、底線）" % at)
 		if type == "narrate" and beat.has("fx") and not FX_NAMES.has(beat["fx"]):
 			errors.append("%s：不認得的演出「%s」" % [at, str(beat["fx"])])
 
@@ -127,6 +132,17 @@ static func validate(script: Dictionary, characters: Dictionary, moves: Dictiona
 	if (beat_list[count - 1] as Dictionary).get("type") != "end":
 		errors.append("%s：最後一拍必須是 end" % where)
 	return errors
+
+
+static func _is_identifier(text: String) -> bool:
+	if text == "":
+		return false
+	for i in text.length():
+		var code := text.unicode_at(i)
+		var ok := (code >= 97 and code <= 122) or (code >= 48 and code <= 57) or code == 95
+		if not ok:
+			return false
+	return true
 
 
 static func _validate_act(beat: Dictionary, at: String, characters: Dictionary, moves: Dictionary,

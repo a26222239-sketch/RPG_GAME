@@ -8,7 +8,7 @@
 
 ## 目前狀態
 
-**序章可以玩了。** 從標題畫面開始，八幕劇情與戰鬥交錯，一路到主角在三年前醒來。畫面全部是色塊佔位，還沒有美術與聲音。
+**序章可以玩了，而且已經換上第一批美術。** 從標題畫面開始，八幕劇情與戰鬥交錯，一路到主角在三年前醒來。五個角色的立繪、天魔殿、介面外觀都是正式的圖；角色還不會動（每人只有一張站姿），特效是程式畫的，最後一幕的舊居還沒有背景圖，也還沒有聲音。
 
 序章之後的內容（真正的戰鬥規則、探索、養成）還沒開始做。
 
@@ -21,9 +21,9 @@
 
 操作：滑鼠點擊。鍵盤的 Enter 或空白鍵可以推進對話、按下亮著的按鈕。右上角可以跳過序章。
 
-五位人物的九套立繪已整理完成，姓名、初期與全盛造型可在[人物與立繪對照](assets/incoming/batch_00/README.md)逐一查看。每套附全身、背面、臉部特寫與色票。天魔殿與戰鬥介面樣張收在[風格指南](assets/incoming/style_v01/style/guide.md)。
+五位人物的九套立繪已整理完成，姓名、初期與全盛造型可在[人物與立繪對照](assets/style/README.md)逐一查看。每套附全身、背面、臉部特寫與色票。天魔殿與戰鬥介面樣張收在[風格指南](assets/style/guide.md)。
 
-[![人物與九套立繪對照](assets/incoming/batch_00/style/character_overview.jpg)](assets/incoming/batch_00/README.md)
+[![人物與九套立繪對照](assets/style/character_overview.jpg)](assets/style/README.md)
 
 ## 文件
 
@@ -32,6 +32,7 @@
 | [docs/direction.md](docs/direction.md) | 方向層級的決定、里程碑、風險 |
 | [docs/design.md](docs/design.md) | 設計文件：世界觀、戰鬥、養成、門派、隊友、探索、資料格式、技術架構、GPT 的工作 |
 | [docs/prologue.md](docs/prologue.md) | 序章劇本：每一幕的對白、出手順序、玩家操作 |
+| [docs/art_requests.md](docs/art_requests.md) | 給 GPT 的補畫需求單：序章的畫面上還有哪些地方是程式暫代的，逐項標在截圖上，附檔名、尺寸與畫面要求 |
 
 ## 分工
 
@@ -43,7 +44,9 @@
 | 配樂 | Claude 從公開授權的音樂中挑選並接入；專案擁有者試聽定案 |
 | 方向決策、劇本定案、試玩回饋、驗收 | 專案擁有者 |
 
-美術與程式之間的介面是[動畫契約](docs/design.md#124-動畫契約)：每個角色提供同一組動畫名稱與掛點，照著交付就能直接替換佔位圖。
+美術與程式之間的介面是[動畫契約](docs/design.md#124-動畫契約)：每個角色提供同一組動畫名稱與掛點，照著交付就能直接替換目前的靜態站姿。
+
+GPT 交付的檔案先放進 `assets/incoming/`；驗收通過後由 Claude 移到正式的資料夾並接進遊戲（[流程](docs/design.md#1510-交付與驗收)、[驗收紀錄](docs/design.md#1514-驗收紀錄)）。接下來要畫什麼，看[補畫需求單](docs/art_requests.md)。
 
 ## 專案結構
 
@@ -51,11 +54,11 @@
 | --- | --- |
 | `core/` | 規則層：資料載入與驗證、劇本式戰鬥。不碰畫面，可以單獨測試 |
 | `game/` | 全域單例：資料、文字、開發用參數 |
-| `scenes/` | 畫面層：啟動畫面、戰鬥畫面、對話框與面板 |
+| `scenes/` | 畫面層：啟動畫面、戰鬥畫面與角色、對話框與面板 |
 | `data/` | 內容資料：角色、招式、劇本、文字。改內容不必改程式 |
-| `assets/` | 字型；之後放美術與音樂 |
+| `assets/` | 字型、角色（設定圖、站姿、頭像）、戰鬥背景、介面圖、風格指南；之後放音樂 |
 | `tests/` | 自動測試 |
-| `tools/` | 開發用工具 |
+| `tools/` | 開發用工具：劇本比對、數值模擬、把設定圖整理成遊戲用的圖 |
 
 想改序章的台詞：改 `data/text/zh_TW.json` 裡對應的句子，並同步改 `docs/prologue.md`。想改出手順序或氣血變化：改 `data/scripted/prologue_final.json`。
 
@@ -64,6 +67,9 @@
 在專案根目錄執行，`godot` 是 Godot 4.7 的執行檔。
 
 ```
+# 剛下載、還沒用 Godot 編輯器開過專案的話，先讓引擎匯入圖檔（開過就不必）
+godot --headless --path . --import
+
 # 規則層的自動測試
 godot --headless --path . -s res://tests/run_tests.gd
 
@@ -76,7 +82,12 @@ godot --path . -- --autoplay --input=clicks --shots=截圖資料夾
 
 `tools/balance_sim.py` 是設計階段用來驗證戰鬥數值的模擬，執行方式見檔案開頭的說明。
 
+`tools/art_needs.py` 從劇本與招式資料算出序章用到哪些圖、哪些還缺，加上 `--missing` 只列缺的。
+
+`tools/prepare_art.py` 檢查角色設定圖的規格，並從設定圖產生遊戲用的站姿與頭像（需要 Python 的 Pillow 與 NumPy）。設定圖有更新、或想調整角色的高矮時重跑一次。
+
 ## 授權與素材來源
 
 - 字型：Noto Serif TC，SIL Open Font License 1.1，見 `assets/fonts/`。
+- 角色、背景、介面圖：由 GPT 以 ChatGPT 內建的圖像生成功能繪製、專案擁有者確認，提示詞收在 `assets/style/prompts.md`。
 

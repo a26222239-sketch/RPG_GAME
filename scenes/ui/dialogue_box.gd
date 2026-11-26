@@ -1,24 +1,32 @@
 extends Control
 ## 對話框。蓋住整個畫面來接點擊：第一下把字全部顯示出來，第二下才往下走。
+## 說話的人有頭像時顯示頭像：我方在左，敵方在右並左右翻轉，讓雙方面對面。
 
 signal advanced
 
-const COLOR_TEXT := Color("#f2ead8")
-const COLOR_NARRATION := Color("#c9bfa8")
-const COLOR_PANEL := Color(0.06, 0.05, 0.08, 1.0)
-const COLOR_BORDER := Color("#6b5a40")
+const UiKit := preload("res://scenes/ui/ui_kit.gd")
+const Glyph := preload("res://scenes/ui/glyph.gd")
+
 const CHARS_PER_SECOND := 45.0
-const BOX_HEIGHT := 340.0
-const MARGIN := 32.0
+const BOX_HEIGHT := 212.0
+const MARGIN := 30.0
+const PAD := 16.0
+const PORTRAIT := 180.0
+const NAME_HEIGHT := 44.0
+const COLOR_NARRATION := Color("#C7D6CE")
 
 var _panel: Panel
-var _name_plate: Panel
+var _frame: Panel
+var _portrait: TextureRect
+var _marker: Glyph
 var _name_label: Label
 var _text_label: Label
 var _arrow: Label
 var _type_tween: Tween
 var _arrow_tween: Tween
 var _typing: bool = false
+var _side: String = ""
+var _has_portrait: bool = false
 
 
 func _ready() -> void:
@@ -26,23 +34,34 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	visible = false
 	_build()
+	resized.connect(_layout)
 
 
 ## 顯示一段話。speaker 為空字串時是旁白。
-func show_line(speaker: String, speaker_color: Color, text: String) -> void:
+## side 是 "party" 或 "enemy"，決定名字的顏色、記號與頭像放哪一邊；head 是頭像，可以沒有。
+func show_line(speaker: String, text: String, side: String = "", head: Texture2D = null) -> void:
 	visible = true
 	var narration := speaker == ""
-	_name_plate.visible = not narration
-	_name_label.text = speaker
+	_side = "" if narration else side
+	_has_portrait = not narration and head != null
+	_frame.visible = _has_portrait
+	_portrait.texture = head
+	_portrait.flip_h = side == "enemy"
+	_marker.visible = not narration
+	_name_label.visible = not narration
 	if not narration:
-		var style := _name_plate.get_theme_stylebox("panel") as StyleBoxFlat
-		style.bg_color = speaker_color.darkened(0.35)
-		style.border_color = speaker_color.lightened(0.2)
+		var color := UiKit.ENEMY if side == "enemy" else UiKit.PARTY
+		_marker.kind = "diamond" if side == "enemy" else "dot"
+		_marker.color = color
+		_name_label.text = speaker
+		_name_label.add_theme_color_override("font_color", color)
 	_text_label.text = text
-	_text_label.add_theme_color_override("font_color", COLOR_NARRATION if narration else COLOR_TEXT)
+	_text_label.add_theme_color_override("font_color", COLOR_NARRATION if narration else UiKit.TEXT)
 	_text_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER if narration else HORIZONTAL_ALIGNMENT_LEFT
+	_text_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER if narration else VERTICAL_ALIGNMENT_TOP
 	_text_label.visible_ratio = 0.0
 	_arrow.visible = false
+	_layout()
 	_typing = true
 	if _type_tween:
 		_type_tween.kill()
@@ -99,71 +118,74 @@ func _unhandled_key_input(event: InputEvent) -> void:
 func _build() -> void:
 	_panel = Panel.new()
 	_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_panel.anchor_left = 0.0
-	_panel.anchor_right = 1.0
-	_panel.anchor_top = 1.0
-	_panel.anchor_bottom = 1.0
-	_panel.offset_left = MARGIN
-	_panel.offset_right = -MARGIN
-	_panel.offset_top = -(BOX_HEIGHT + MARGIN)
-	_panel.offset_bottom = -MARGIN
-	var style := StyleBoxFlat.new()
-	style.bg_color = COLOR_PANEL
-	style.border_color = COLOR_BORDER
-	style.set_border_width_all(4)
-	style.set_corner_radius_all(14)
-	_panel.add_theme_stylebox_override("panel", style)
+	_panel.add_theme_stylebox_override("panel", UiKit.panel_style())
 	add_child(_panel)
 
-	_name_plate = Panel.new()
-	_name_plate.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_name_plate.position = Vector2(36, -34)
-	_name_plate.size = Vector2(300, 68)
-	var plate_style := StyleBoxFlat.new()
-	plate_style.bg_color = Color("#333333")
-	plate_style.border_color = Color("#888888")
-	plate_style.set_border_width_all(4)
-	plate_style.set_corner_radius_all(10)
-	_name_plate.add_theme_stylebox_override("panel", plate_style)
-	_panel.add_child(_name_plate)
+	_frame = Panel.new()
+	_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_frame.size = Vector2(PORTRAIT, PORTRAIT)
+	var frame_style := StyleBoxFlat.new()
+	frame_style.bg_color = UiKit.TEAL
+	frame_style.border_color = UiKit.BRONZE
+	frame_style.set_border_width_all(3)
+	_frame.add_theme_stylebox_override("panel", frame_style)
+	_panel.add_child(_frame)
 
-	_name_label = Label.new()
-	_name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_name_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_name_label.add_theme_font_size_override("font_size", 42)
-	_name_label.add_theme_color_override("font_color", COLOR_TEXT)
-	_name_plate.add_child(_name_label)
+	_portrait = TextureRect.new()
+	_portrait.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_portrait.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_portrait.stretch_mode = TextureRect.STRETCH_SCALE
+	_portrait.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	_portrait.position = Vector2(3, 3)
+	_portrait.size = Vector2(PORTRAIT - 6.0, PORTRAIT - 6.0)
+	_frame.add_child(_portrait)
 
-	_text_label = Label.new()
-	_text_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_text_label.anchor_right = 1.0
-	_text_label.anchor_bottom = 1.0
-	_text_label.offset_left = 56
-	_text_label.offset_right = -56
-	_text_label.offset_top = 52
-	_text_label.offset_bottom = -40
+	_marker = Glyph.new("dot", UiKit.PARTY, 30.0)
+	_panel.add_child(_marker)
+
+	_name_label = UiKit.label("", 40)
+	_name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	_panel.add_child(_name_label)
+
+	_text_label = UiKit.label("", 44)
 	_text_label.autowrap_mode = TextServer.AUTOWRAP_ARBITRARY
-	_text_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	_text_label.add_theme_font_size_override("font_size", 48)
-	_text_label.add_theme_constant_override("line_spacing", 14)
+	_text_label.add_theme_constant_override("line_spacing", 6)
 	_panel.add_child(_text_label)
 
-	_arrow = Label.new()
-	_arrow.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_arrow.text = "▼"
-	_arrow.anchor_left = 1.0
-	_arrow.anchor_right = 1.0
-	_arrow.anchor_top = 1.0
-	_arrow.anchor_bottom = 1.0
-	_arrow.offset_left = -90
-	_arrow.offset_right = -30
-	_arrow.offset_top = -70
-	_arrow.offset_bottom = -14
-	_arrow.add_theme_font_size_override("font_size", 36)
-	_arrow.add_theme_color_override("font_color", Color("#ffd84a"))
+	_arrow = UiKit.label("▼", 30, UiKit.HIGHLIGHT)
+	_arrow.size = Vector2(44, 40)
 	_panel.add_child(_arrow)
 	_arrow_tween = create_tween().set_loops()
 	_arrow_tween.tween_property(_arrow, "modulate:a", 0.25, 0.5)
 	_arrow_tween.tween_property(_arrow, "modulate:a", 1.0, 0.5)
+	_layout()
+
+
+func _layout() -> void:
+	if _panel == null:
+		return
+	var box := Vector2(size.x - MARGIN * 2.0, BOX_HEIGHT)
+	_panel.position = Vector2(MARGIN, size.y - MARGIN - BOX_HEIGHT)
+	_panel.size = box
+
+	# 文字區：扣掉頭像那一側
+	var left := PAD + 22.0
+	var right := box.x - PAD - 22.0
+	if _has_portrait:
+		if _side == "enemy":
+			_frame.position = Vector2(box.x - PAD - PORTRAIT, PAD)
+			right = _frame.position.x - 28.0
+		else:
+			_frame.position = Vector2(PAD, PAD)
+			left = PAD + PORTRAIT + 28.0
+
+	if _side == "":
+		_text_label.position = Vector2(left, PAD)
+		_text_label.size = Vector2(right - left, box.y - PAD * 2.0)
+	else:
+		_marker.position = Vector2(left, PAD + (NAME_HEIGHT - 30.0) / 2.0 - 2.0)
+		_name_label.position = Vector2(left + 40.0, PAD - 2.0)
+		_name_label.size = Vector2(right - left - 40.0, NAME_HEIGHT)
+		_text_label.position = Vector2(left, PAD + NAME_HEIGHT + 2.0)
+		_text_label.size = Vector2(right - left, box.y - PAD * 2.0 - NAME_HEIGHT - 2.0)
+	_arrow.position = Vector2(right - 40.0, box.y - PAD - 38.0)

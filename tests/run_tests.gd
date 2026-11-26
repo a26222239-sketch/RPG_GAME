@@ -7,6 +7,7 @@ extends SceneTree
 
 const GameData := preload("res://core/data/game_data.gd")
 const ScriptedBattle := preload("res://core/scripted/scripted_battle.gd")
+const LineWrap := preload("res://core/text/line_wrap.gd")
 
 var _passed: int = 0
 var _failed: int = 0
@@ -22,6 +23,8 @@ func _initialize() -> void:
 		_test_prologue_inputs()
 		_test_prologue_text_is_all_used()
 		_test_validator_catches_mistakes()
+		_test_prologue_art_exists()
+	_test_line_wrap()
 	print("\n測試結果：通過 %d，失敗 %d" % [_passed, _failed])
 	quit(1 if _failed > 0 else 0)
 
@@ -157,6 +160,58 @@ func _test_validator_catches_mistakes() -> void:
 	broken = base.duplicate(true)
 	(broken["party"] as Array).append("tianmo")
 	_check(_has_problem(broken), "抓得到把敵人放進我方隊伍")
+
+	broken = base.duplicate(true)
+	broken["beats"][_find_beat(broken, "say", "yanhui_peak")]["face"] = "Yan Hui"
+	_check(_has_problem(broken), "抓得到寫錯格式的頭像造型")
+
+
+## 序章用到的圖都在：每個角色的站姿與頭像、台詞另外指定的頭像、戰鬥背景。
+func _test_prologue_art_exists() -> void:
+	var script := _data.load_scripted("prologue_final")
+	var missing: Array[String] = []
+	var looks: Array = (script["party"] as Array) + (script["enemies"] as Array)
+	for unit_id: String in looks:
+		var stand := "res://assets/characters/%s/frames/stand.png" % unit_id
+		if not FileAccess.file_exists(stand):
+			missing.append(stand)
+	for beat: Dictionary in script["beats"]:
+		if beat.get("type") == "say" and beat.has("face") and not looks.has(beat["face"]):
+			looks.append(beat["face"])
+	for look: String in looks:
+		var head := "res://assets/characters/%s/portrait/head.png" % look
+		if not FileAccess.file_exists(head):
+			missing.append(head)
+	var background := "res://assets/backgrounds/battle/%s.jpg" % str(script["background"])
+	if not FileAccess.file_exists(background):
+		missing.append(background)
+	_check(missing.is_empty(), "序章的站姿、頭像與戰鬥背景都有圖", "缺：" + "、".join(missing))
+
+
+func _test_line_wrap() -> void:
+	var charge := "威力大的招式要先蓄力，也會消耗內力。"
+	_check(LineWrap.balanced(charge, 16) == "威力大的招式要先蓄力，\n也會消耗內力。", "提示在逗號後面換行，不留一兩個字自成一行",
+		LineWrap.balanced(charge, 16))
+	_check(LineWrap.balanced("選擇目標", 16) == "選擇目標", "放得下的文字不換行")
+	_check(LineWrap.balanced("一二三四五六\n七八", 4) == "一二三\n四五六\n七八", "沒有標點時平均分行，原本的換行保留",
+		LineWrap.balanced("一二三四五六\n七八", 4))
+
+	# 所有提示在各種寬度下：不超寬、標點不在行首、內容不變
+	var problems: Array[String] = []
+	for key: String in _data.texts:
+		if not key.begins_with("TUT_"):
+			continue
+		var text := str(_data.texts[key])
+		for width in range(6, 31):
+			var wrapped := LineWrap.balanced(text, width)
+			if wrapped.replace("\n", "") != text:
+				problems.append("%s 寬 %d：內容變了" % [key, width])
+			for line in wrapped.split("\n"):
+				if line.length() > width:
+					problems.append("%s 寬 %d：「%s」超寬" % [key, width, line])
+				if line != "" and LineWrap.BREAK_AFTER.contains(line[0]):
+					problems.append("%s 寬 %d：「%s」以標點開頭" % [key, width, line])
+	_check(problems.is_empty(), "四則教學提示在每行 6 到 30 個字的寬度下都排得正確", "；".join(problems.slice(0, 5)))
 
 
 # ---------------------------------------------------------------- 工具

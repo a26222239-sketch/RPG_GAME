@@ -1,158 +1,139 @@
-extends Control
-## 隊伍面板：每人一列，顯示名字、氣血、內力。輪到的人會亮起來。
+extends PanelContainer
+## 隊伍面板：每人一列，顯示頭像、名字、氣血、內力。輪到的人會亮起來。
+## 放在畫面左上角。
 
-const COLOR_TEXT := Color("#f2ead8")
-const COLOR_HIGHLIGHT := Color("#ffd84a")
-const COLOR_HP := Color("#5fbf6a")
-const COLOR_HP_LOW := Color("#d9a13b")
-const COLOR_HP_DANGER := Color("#d04a4a")
-const COLOR_MP := Color("#4a8fd0")
-const COLOR_BAR_BACK := Color(0, 0, 0, 0.6)
-const ROW_SIZE := Vector2(820, 76)
-const GAP := 9.0
-const NAME_W := 190.0
-const HP_W := 330.0
-const MP_W := 200.0
+const UiKit := preload("res://scenes/ui/ui_kit.gd")
+const Bar := preload("res://scenes/ui/bar.gd")
+const Glyph := preload("res://scenes/ui/glyph.gd")
+
+const ROW_HEIGHT := 56.0
+const ROW_GAP := 4.0
+const HEAD_SIZE := 50.0
+const NAME_W := 116.0
+const BAR_W := 250.0
+const HP_BAR_H := 27.0
+const MP_BAR_H := 9.0
+const NUMBER_W := 104.0
+## 氣血低於這個比例時，數字改用警示色。
+const LOW_HP := 0.35
 
 var _rows: Dictionary = {}
-var _order: Array[String] = []
+var _list: VBoxContainer
 
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_theme_stylebox_override("panel", UiKit.panel_style(22.0, 15.0))
 
 
-## members 是 [{ id, name, color, hp_max, mp_max }]。
+## members 是 [{ id, name, hp_max, mp_max }]。
 func setup(members: Array) -> void:
-	for child in get_children():
-		child.queue_free()
+	if _list:
+		_list.queue_free()
 	_rows.clear()
-	_order.clear()
-	for i in members.size():
-		var m: Dictionary = members[i]
-		_order.append(str(m["id"]))
-		_rows[m["id"]] = _build_row(m, i)
-	custom_minimum_size = panel_size(members.size())
-	size = custom_minimum_size
-
-
-static func panel_size(member_count: int) -> Vector2:
-	return Vector2(ROW_SIZE.x, ROW_SIZE.y * member_count + GAP * maxi(0, member_count - 1))
+	_list = VBoxContainer.new()
+	_list.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_list.add_theme_constant_override("separation", int(ROW_GAP))
+	add_child(_list)
+	for m: Dictionary in members:
+		_rows[m["id"]] = _build_row(m)
+	reset_size()
 
 
 func set_hp(unit_id: String, ratio: float, animate: bool = true) -> void:
 	var row: Dictionary = _rows.get(unit_id, {})
 	if row.is_empty():
 		return
-	var fill: ColorRect = row["hp_fill"]
 	ratio = clampf(ratio, 0.0, 1.0)
-	fill.color = COLOR_HP if ratio > 0.35 else (COLOR_HP_LOW if ratio > 0.2 else COLOR_HP_DANGER)
-	(row["hp_text"] as Label).text = str(roundi(ratio * int(row["hp_max"])))
-	_set_bar(fill, HP_W * ratio, animate)
+	var number: Label = row["hp_text"]
+	number.text = str(roundi(ratio * int(row["hp_max"])))
+	number.add_theme_color_override("font_color", UiKit.ENEMY if ratio <= LOW_HP else UiKit.TEXT)
+	(row["hp"] as Bar).set_ratio(ratio, animate)
 
 
 func set_mp(unit_id: String, ratio: float, animate: bool = true) -> void:
 	var row: Dictionary = _rows.get(unit_id, {})
 	if row.is_empty():
 		return
-	ratio = clampf(ratio, 0.0, 1.0)
-	(row["mp_text"] as Label).text = str(roundi(ratio * int(row["mp_max"])))
-	_set_bar(row["mp_fill"], MP_W * ratio, animate)
+	(row["mp"] as Bar).set_ratio(ratio, animate)
 
 
 func set_active(unit_id: String) -> void:
 	for id: String in _rows:
 		var row: Dictionary = _rows[id]
 		var active: bool = id == unit_id
-		var style := (row["panel"] as Panel).get_theme_stylebox("panel") as StyleBoxFlat
-		style.border_color = COLOR_HIGHLIGHT if active else Color("#4a4034")
-		style.bg_color = Color(0.2, 0.17, 0.1, 0.95) if active else Color(0.08, 0.07, 0.1, 0.88)
-		(row["name"] as Label).add_theme_color_override("font_color", COLOR_HIGHLIGHT if active else COLOR_TEXT)
+		(row["name"] as Label).add_theme_color_override("font_color", UiKit.HIGHLIGHT if active else UiKit.TEXT)
+		(row["back"] as ColorRect).color = Color(UiKit.PINE, 0.55) if active else Color(0, 0, 0, 0)
+		(row["frame_style"] as StyleBoxFlat).border_color = UiKit.HIGHLIGHT if active else UiKit.BRONZE
 
 
-func _set_bar(fill: ColorRect, width: float, animate: bool) -> void:
-	if not animate:
-		fill.size.x = width
-		return
-	var tween := create_tween()
-	tween.tween_property(fill, "size:x", width, 0.45).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+func _build_row(m: Dictionary) -> Dictionary:
+	var row := Control.new()
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var width := HEAD_SIZE + 14.0 + NAME_W + 10.0 + BAR_W + 8.0 + NUMBER_W
+	row.custom_minimum_size = Vector2(width, ROW_HEIGHT)
+	_list.add_child(row)
 
-
-func _build_row(m: Dictionary, row_index: int) -> Dictionary:
-	var panel := Panel.new()
-	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	panel.position = Vector2(0, (ROW_SIZE.y + GAP) * row_index)
-	panel.size = ROW_SIZE
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.08, 0.07, 0.1, 0.88)
-	style.border_color = Color("#4a4034")
-	style.set_border_width_all(3)
-	style.border_width_left = 12
-	style.set_corner_radius_all(8)
-	panel.add_theme_stylebox_override("panel", style)
-	add_child(panel)
-
-	var swatch := ColorRect.new()
-	swatch.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	swatch.color = m["color"]
-	swatch.position = Vector2(20, 16)
-	swatch.size = Vector2(14, ROW_SIZE.y - 32)
-	panel.add_child(swatch)
-
-	var name_label := _label(str(m["name"]), 40, HORIZONTAL_ALIGNMENT_LEFT)
-	name_label.position = Vector2(46, 0)
-	name_label.size = Vector2(NAME_W, ROW_SIZE.y)
-	panel.add_child(name_label)
-
-	var x := 46.0 + NAME_W
-	var hp := _bar(panel, Vector2(x, 12), HP_W, 52, COLOR_HP, Game.t("UI_HP"))
-	x += HP_W + 28.0
-	var mp := _bar(panel, Vector2(x, 12), MP_W, 52, COLOR_MP, Game.t("UI_MP"))
-
-	(hp["text"] as Label).text = str(int(m["hp_max"]))
-	(mp["text"] as Label).text = str(int(m["mp_max"]))
-	return {
-		"panel": panel, "name": name_label,
-		"hp_fill": hp["fill"], "hp_text": hp["text"], "hp_max": int(m["hp_max"]),
-		"mp_fill": mp["fill"], "mp_text": mp["text"], "mp_max": int(m["mp_max"]),
-	}
-
-
-## 一條有標題與數字的橫條。回傳 { fill, text }。
-func _bar(parent: Control, pos: Vector2, width: float, height: float, color: Color, caption: String) -> Dictionary:
+	# 輪到這個人時亮起來的底色
 	var back := ColorRect.new()
 	back.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	back.color = COLOR_BAR_BACK
-	back.position = pos
-	back.size = Vector2(width, height)
-	parent.add_child(back)
+	back.color = Color(0, 0, 0, 0)
+	back.position = Vector2(-8, -3)
+	back.size = Vector2(width + 16.0, ROW_HEIGHT + 6.0)
+	row.add_child(back)
 
-	var fill := ColorRect.new()
-	fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	fill.color = color
-	fill.size = Vector2(width, height)
-	back.add_child(fill)
+	# 頭像；還沒有圖的角色用我方的圓點代替
+	var head_top := (ROW_HEIGHT - HEAD_SIZE) / 2.0
+	var frame := Panel.new()
+	frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	frame.position = Vector2(0, head_top)
+	frame.size = Vector2(HEAD_SIZE, HEAD_SIZE)
+	var frame_style := StyleBoxFlat.new()
+	frame_style.bg_color = UiKit.TEAL
+	frame_style.border_color = UiKit.BRONZE
+	frame_style.set_border_width_all(2)
+	frame.add_theme_stylebox_override("panel", frame_style)
+	row.add_child(frame)
+	var texture := UiKit.head_texture(str(m["id"]))
+	if texture:
+		var head := TextureRect.new()
+		head.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		head.texture = texture
+		head.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		head.stretch_mode = TextureRect.STRETCH_SCALE
+		head.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+		head.position = Vector2(2, head_top + 2.0)
+		head.size = Vector2(HEAD_SIZE - 4.0, HEAD_SIZE - 4.0)
+		row.add_child(head)
+	else:
+		var dot := Glyph.new("dot", UiKit.PARTY, 30.0)
+		dot.position = Vector2((HEAD_SIZE - 30.0) / 2.0, head_top + (HEAD_SIZE - 30.0) / 2.0)
+		row.add_child(dot)
 
-	var caption_label := _label(caption, 36, HORIZONTAL_ALIGNMENT_LEFT)
-	caption_label.position = Vector2(10, 0)
-	caption_label.size = Vector2(width, height)
-	back.add_child(caption_label)
+	var x := HEAD_SIZE + 14.0
+	var name_label := UiKit.label(str(m["name"]), 36)
+	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	name_label.position = Vector2(x, 0)
+	name_label.size = Vector2(NAME_W, ROW_HEIGHT)
+	row.add_child(name_label)
 
-	var text := _label("", 36, HORIZONTAL_ALIGNMENT_RIGHT)
-	text.position = Vector2(0, 0)
-	text.size = Vector2(width - 10, height)
-	back.add_child(text)
-	return {"fill": fill, "text": text}
+	x += NAME_W + 10.0
+	var hp := Bar.new()
+	hp.setup_textured(Vector2(BAR_W, HP_BAR_H))
+	hp.position = Vector2(x, 7)
+	row.add_child(hp)
+	var mp := Bar.new()
+	mp.setup_flat(Vector2(BAR_W - 20.0, MP_BAR_H), UiKit.MP)
+	mp.position = Vector2(x + 10.0, 7.0 + HP_BAR_H + 5.0)
+	row.add_child(mp)
 
+	var hp_text := UiKit.label(str(int(m["hp_max"])), 36)
+	hp_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	hp_text.position = Vector2(x + BAR_W + 8.0, 0)
+	hp_text.size = Vector2(NUMBER_W, ROW_HEIGHT - 12.0)
+	row.add_child(hp_text)
 
-func _label(text: String, font_size: int, align: HorizontalAlignment) -> Label:
-	var label := Label.new()
-	label.text = text
-	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	label.horizontal_alignment = align
-	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", font_size)
-	label.add_theme_color_override("font_color", COLOR_TEXT)
-	label.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
-	label.add_theme_constant_override("outline_size", 6)
-	return label
+	return {
+		"name": name_label, "back": back, "frame_style": frame_style,
+		"hp": hp, "mp": mp, "hp_text": hp_text, "hp_max": int(m["hp_max"]),
+	}

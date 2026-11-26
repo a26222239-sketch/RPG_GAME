@@ -17,6 +17,9 @@ const ANIMS := [
 	"hit", "guard", "stagger", "down", "victory", "walk",
 ]
 const REACHES := ["melee", "ranged", "self"]
+## 多個招式共用的特效（設計文件 15.9）。招式的 fx 欄位填這裡的其中一個；
+## 有專屬特效的招式（絕招）則填招式自己的識別碼。
+const SHARED_FX := ["slash_sword", "slash_blade", "palm", "seal", "heal", "buff", "debuff"]
 
 var characters: Dictionary = {}
 var moves: Dictionary = {}
@@ -94,6 +97,8 @@ func _validate() -> void:
 		_require_enum(m, "force", FORCES, where)
 		_require_enum(m, "anim", ANIMS, where)
 		_require_enum(m, "reach", REACHES, where)
+		if not SHARED_FX.has(m.get("fx")) and m.get("fx") != move_id:
+			errors.append("%s：fx 必須是共用特效 %s 之一，或是招式自己的識別碼" % [where, str(SHARED_FX)])
 
 	for char_id: String in characters:
 		var c: Variant = characters[char_id]

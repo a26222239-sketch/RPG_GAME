@@ -118,8 +118,8 @@
     { "type": "narrate", "text": "PRO_N_10" },
     { "type": "narrate", "text": "PRO_N_11" },
     { "type": "narrate", "text": "PRO_N_12" },
-    { "type": "say", "who": "yanhui_peak", "text": "PRO_D_41" },
-    { "type": "say", "who": "yanhui_peak", "text": "PRO_D_42" },
+    { "type": "say", "who": "yanhui_peak", "face": "yanhui", "text": "PRO_D_41" },
+    { "type": "say", "who": "yanhui_peak", "face": "yanhui", "text": "PRO_D_42" },
     { "type": "subtitle", "text": "PRO_SUB_04" },
     { "type": "end" }
   ]
