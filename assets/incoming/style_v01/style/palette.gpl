@@ -1,0 +1,17 @@
+GIMP Palette
+Name: Wulin RPG v0.1
+Columns: 7
+#
+ 23  44  52  ink
+ 49  86  91  blue_lacquer
+ 82 120 112  pine
+170 208 195  mist_jade
+234 227 207  linen
+184 154 102  old_brass
+161  79  68  weathered_red
+224 161  79  force_gang
+114 188 167  force_rou
+178 163 235  force_kuai
+114 171 227  ally
+236 129 116  enemy
+198  94  80  hp
