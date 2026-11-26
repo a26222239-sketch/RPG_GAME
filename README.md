@@ -21,7 +21,9 @@
 
 操作：滑鼠點擊。鍵盤的 Enter 或空白鍵可以推進對話、按下亮著的按鈕。右上角可以跳過序章。
 
-美術批次 0 已確認燕回雙時期造型與畫風。天魔殿、戰鬥介面樣張與色票收在[風格指南](assets/incoming/style_v01/style/guide.md)。
+五位人物的九套立繪已整理完成，姓名、初期與全盛造型可在[人物與立繪對照](assets/incoming/batch_00/README.md)逐一查看。每套附全身、背面、臉部特寫與色票。天魔殿與戰鬥介面樣張收在[風格指南](assets/incoming/style_v01/style/guide.md)。
+
+[![人物與九套立繪對照](assets/incoming/batch_00/style/character_overview.jpg)](assets/incoming/batch_00/README.md)
 
 ## 文件
 
@@ -77,3 +79,4 @@ godot --path . -- --autoplay --input=clicks --shots=截圖資料夾
 ## 授權與素材來源
 
 - 字型：Noto Serif TC，SIL Open Font License 1.1，見 `assets/fonts/`。
+
