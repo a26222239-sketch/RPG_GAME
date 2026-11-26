@@ -1,0 +1,11 @@
+{
+	"animations": [
+		"idle",
+		"attack_light",
+		"hit"
+	],
+	"checks_passed": 31,
+	"engine": "4.7.1-stable (official)",
+	"frames": 15,
+	"result": "pass"
+}

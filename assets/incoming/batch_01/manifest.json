@@ -1,0 +1,134 @@
+{
+  "base_commit": "5092e044ce27cd5120ccdb777c59f615ac829562",
+  "status": "pending_integration_review",
+  "asset_count": 7,
+  "checks_passed": true,
+  "button_slice": 28,
+  "bar_slice": 20,
+  "mp_color": "#7BB9B0",
+  "gauge_color": "#D9B872",
+  "preview_is": "art_composite_not_engine_capture",
+  "assets": [
+    {
+      "path": "ui/button_disabled.png",
+      "width": 320,
+      "height": 128,
+      "transparent_pixels": 1004,
+      "opaque_pixels": 39888,
+      "alpha_bbox": [
+        1,
+        1,
+        319,
+        127
+      ],
+      "corners_clear": true,
+      "button_alpha_differences": 0,
+      "non_identifier_color_pixels": 0,
+      "sha256": "8093b708983102b230c4ef1c4447704624a4223bca93ec33d4f6e72fa0638a46"
+    },
+    {
+      "path": "ui/button_pressed.png",
+      "width": 320,
+      "height": 128,
+      "transparent_pixels": 1004,
+      "opaque_pixels": 39888,
+      "alpha_bbox": [
+        1,
+        1,
+        319,
+        127
+      ],
+      "corners_clear": true,
+      "button_alpha_differences": 0,
+      "non_identifier_color_pixels": 0,
+      "sha256": "b167cdb49f9938d9ef998c3c99220e6a657bf0168904332c7033dcde0f1918ad"
+    },
+    {
+      "path": "ui/button_active.png",
+      "width": 320,
+      "height": 128,
+      "transparent_pixels": 1004,
+      "opaque_pixels": 39888,
+      "alpha_bbox": [
+        1,
+        1,
+        319,
+        127
+      ],
+      "corners_clear": true,
+      "button_alpha_differences": 0,
+      "non_identifier_color_pixels": 0,
+      "sha256": "8405e1ff846a05cd43506e52542d4458af2a326e58a69980dcce96dce9353556"
+    },
+    {
+      "path": "ui/mp_track.png",
+      "width": 384,
+      "height": 20,
+      "transparent_pixels": 915,
+      "opaque_pixels": 6105,
+      "alpha_bbox": [
+        1,
+        1,
+        384,
+        19
+      ],
+      "corners_clear": true,
+      "button_alpha_differences": 0,
+      "non_identifier_color_pixels": 0,
+      "sha256": "df2c9410e265fa8bf52760fc6b73c202c426fb99849abe8c196315514807ac81"
+    },
+    {
+      "path": "ui/mp_fill.png",
+      "width": 384,
+      "height": 20,
+      "transparent_pixels": 3372,
+      "opaque_pixels": 4284,
+      "alpha_bbox": [
+        10,
+        4,
+        374,
+        16
+      ],
+      "corners_clear": true,
+      "button_alpha_differences": 0,
+      "non_identifier_color_pixels": 0,
+      "sha256": "b0fd2ff9c59c51cb409406948439040323c7219f3d09f17dbd190dea293513a6"
+    },
+    {
+      "path": "ui/gauge_track.png",
+      "width": 384,
+      "height": 20,
+      "transparent_pixels": 915,
+      "opaque_pixels": 6105,
+      "alpha_bbox": [
+        1,
+        1,
+        384,
+        19
+      ],
+      "corners_clear": true,
+      "button_alpha_differences": 0,
+      "non_identifier_color_pixels": 0,
+      "sha256": "df2c9410e265fa8bf52760fc6b73c202c426fb99849abe8c196315514807ac81"
+    },
+    {
+      "path": "ui/gauge_fill.png",
+      "width": 384,
+      "height": 20,
+      "transparent_pixels": 3372,
+      "opaque_pixels": 4284,
+      "alpha_bbox": [
+        10,
+        4,
+        374,
+        16
+      ],
+      "corners_clear": true,
+      "button_alpha_differences": 0,
+      "non_identifier_color_pixels": 0,
+      "sha256": "cd3c62b666753c14ca74b4ef51c4b0d48e5f96b3e24479cd85aa027f42f2b6f3"
+    }
+  ],
+  "revision": "2026-11-27_text_labels_no_icons",
+  "ui_icons": "cancelled_by_owner"
+}

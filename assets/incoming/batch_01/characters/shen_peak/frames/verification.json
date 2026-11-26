@@ -1,0 +1,91 @@
+{
+	"checks": [
+		"frame dimensions",
+		"true alpha",
+		"full sword and feet inside frame",
+		"feet baseline y=480",
+		"reference scale 392px",
+		"idle loop breathing",
+		"attack impact frame 3",
+		"hit impact frame 1"
+	],
+	"engine": "4.7.1-stable (official)",
+	"frames": 15,
+	"limitations": "Four generated keyposes; hold and recovery frames reuse source poses. This is an initial animation pilot, not finished in-between animation.",
+	"poses": [
+		{
+			"frame_box": [
+				91,
+				88,
+				262,
+				392
+			],
+			"pose": "anticipation",
+			"scale": 0.655518394648829,
+			"source_box": [
+				116,
+				12,
+				401,
+				598
+			],
+			"source_feet_center": 367.5
+		},
+		{
+			"frame_box": [
+				90,
+				88,
+				374,
+				392
+			],
+			"pose": "strike",
+			"scale": 0.677029360967185,
+			"source_box": [
+				688,
+				29,
+				554,
+				579
+			],
+			"source_feet_center": 933.0
+		},
+		{
+			"frame_box": [
+				82,
+				88,
+				322,
+				392
+			],
+			"pose": "follow_through",
+			"scale": 0.651162790697674,
+			"source_box": [
+				95,
+				638,
+				495,
+				602
+			],
+			"source_feet_center": 362.75
+		},
+		{
+			"frame_box": [
+				106,
+				88,
+				214,
+				392
+			],
+			"pose": "hurt",
+			"scale": 0.653333333333333,
+			"source_box": [
+				751,
+				640,
+				328,
+				600
+			],
+			"source_feet_center": 980.75
+		}
+	],
+	"removed_low_alpha_or_chroma_pixels": 77749,
+	"source_size": [
+		1254,
+		1254
+	],
+	"status": "technical_pass_pending_art_and_game_integration"
+}

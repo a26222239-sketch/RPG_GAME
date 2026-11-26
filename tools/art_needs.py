@@ -208,10 +208,9 @@ def main() -> int:
         rows.append((f"vfx/{effect}.png", spec, f"{title}：{where}"))
     sections.append(("特效", rows))
 
+    # 2026-11-27 owner decision: force/state labels are text only; no UI icons.
     rows = list(UI_FILES)
-    rows += [(f"icons/status/force_{force}.png", "128×128", f"勁路「{FORCE_TEXT[force]}」的圖示：" + "、".join(reasons)) for force, reasons in forces.items()]
-    rows += [(f"icons/status/{state}.png", "128×128", f"狀態「{STATE_TEXT.get(state, state)}」的圖示：" + "、".join(reasons)) for state, reasons in states.items()]
-    sections.append(("介面與圖示", rows))
+    sections.append(("介面", rows))
 
     counts = {"有": 0, "待驗收": 0, "缺": 0}
     for title, rows in sections:
@@ -234,3 +233,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
+

@@ -1,0 +1,7 @@
+Source: ChatGPT built-in image generation, 2026-11-27.
+Reference: assets/characters/shen_peak/frames/stand.png at 5092e044ce27cd5120ccdb777c59f615ac829562.
+Requested four keyposes in a 2x2 transparent sheet: sword anticipation, impact strike, follow-through, non-graphic hurt.
+Preserve the established adult Shen Qinghe: long black half-up hair, silver swallow hairpin/red pendant, deep plum off-shoulder wuxia dress with silver piping, thigh slit, tall purple boots, ornate straight sword. Face screen right, light upper left, full body/weapon, no ground shadow or effects.
+Actual source output is 1254x1254, not the requested 1536x1536. Godot normalizes four source cells to 512x512 frames at 392px opaque height and feet anchor (256,480).
+Original transparent source retained unchanged; build_shen.gd removes low-alpha/chroma fringe only while preparing output images.
+

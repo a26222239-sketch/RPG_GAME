@@ -1,0 +1,17 @@
+config_version=5
+
+[application]
+config/name="RPG Battle Animation Preview"
+run/main_scene="res://main.tscn"
+
+[display]
+window/size/viewport_width=1536
+window/size/viewport_height=720
+window/size/window_width_override=1280
+window/size/window_height_override=600
+window/stretch/mode="canvas_items"
+
+[rendering]
+renderer/rendering_method="gl_compatibility"
+environment/defaults/default_clear_color=Color(0.0902, 0.1725, 0.2039, 1)
+

@@ -1,0 +1,22 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Texture2D" path="res://art/shen_atlas.png" id="1"]
+[ext_resource type="AnimationLibrary" path="res://shen_animations.tres" id="2"]
+
+[node name="ShenQinghe" type="Node2D"]
+
+[node name="Visual" type="Node2D" parent="."]
+
+[node name="Sprite" type="Sprite2D" parent="Visual"]
+texture_filter = 2
+position = Vector2(-256, -480)
+texture = ExtResource("1")
+centered = false
+hframes = 15
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="."]
+libraries = {
+&"": ExtResource("2")
+}
+autoplay = "idle"
+
