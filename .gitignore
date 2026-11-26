@@ -13,3 +13,7 @@ desktop.ini
 *.tmp
 
 # 引擎專屬的忽略規則，等引擎定案後再加入
+
+# Python
+__pycache__/
+*.pyc
