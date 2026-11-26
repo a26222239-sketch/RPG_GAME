@@ -49,32 +49,56 @@ static func single_problem(width: int, height: int, side: int) -> String:
 	return ""
 
 
-## 這組圖要怎麼播。
+## 這組圖要怎麼播。動作的節奏由美術決定，寫在 meta.json；沒寫的才用預設值。
 ## base_length 是這個動作預設的長度（秒）；impact_ratio 是沒有指定時，「打到」的瞬間落在整段的幾成。
-## meta 是美術在 meta.json 裡寫的設定，兩個欄位都可以省略：
-##   fps           每秒播幾格。沒寫的話，把所有格子平均排進 base_length。
-##   impact_frame  第幾格是「打到」的瞬間，從 1 算起。
-## 回傳 { fps, length, impact }，length 與 impact 的單位是秒。
-static func timing(frames: int, base_length: float, impact_ratio: float, meta: Dictionary) -> Dictionary:
+## meta 是美術為這個動作寫的設定，每個欄位都可以省略：
+##   timings_ms    每一格各停幾毫秒，一格一個數字。有這個就照它播，快慢可以不平均。
+##   fps           每秒播幾格（每格一樣久）。沒有 timings_ms 時才看這個。
+##   impact_time   「打到」的瞬間是開始後第幾秒。
+##   impact_frame  或者寫第幾格是「打到」的瞬間；程式取那一格開始的時間。
+## 兩種速度都沒寫的話，把所有格子平均排進 base_length。
+## index_base 是 impact_frame 從幾算起：1（第一格是 1）或 0（第一格是 0）。
+## 回傳 { length, impact, ends }：length 與 impact 的單位是秒；ends[i] 是第 i 格播完的時間。
+static func timing(frames: int, base_length: float, impact_ratio: float, meta: Dictionary, index_base: int = 1) -> Dictionary:
 	var total := maxi(frames, 1)
-	var fps := float(meta.get("fps", 0.0))
-	if fps <= 0.0:
-		fps = total / maxf(base_length, 0.05)
-	var length := total / fps
-	var impact := length * clampf(impact_ratio, 0.0, 1.0)
-	var impact_frame := int(meta.get("impact_frame", 0))
-	if impact_frame >= 1:
-		impact = (mini(impact_frame, total) - 1) / fps
-	return {"fps": fps, "length": length, "impact": impact}
+	var steps: Array[float] = []
+	var written: Variant = meta.get("timings_ms")
+	if written is Array and (written as Array).size() == total:
+		for value: Variant in written:
+			if (value is float or value is int) and float(value) > 0.0:
+				steps.append(float(value) / 1000.0)
+	if steps.size() != total:
+		var fps := float(meta.get("fps", 0.0))
+		var step := 1.0 / fps if fps > 0.0 else maxf(base_length, 0.05) / total
+		steps.clear()
+		for index in total:
+			steps.append(step)
+	var ends: Array[float] = []
+	var clock := 0.0
+	for step in steps:
+		clock += step
+		ends.append(clock)
+	var impact := clock * clampf(impact_ratio, 0.0, 1.0)
+	if meta.get("impact_time") is float or meta.get("impact_time") is int:
+		impact = clampf(float(meta["impact_time"]), 0.0, clock)
+	elif meta.get("impact_frame") is float or meta.get("impact_frame") is int:
+		var index := clampi(int(meta["impact_frame"]) - index_base, 0, total - 1)
+		impact = 0.0 if index == 0 else ends[index - 1]
+	return {"length": clock, "impact": impact, "ends": ends}
 
 
-## 播到第幾秒時該顯示第幾格（從 0 算起）。
-static func frame_at(time: float, fps: float, frames: int, mode: String) -> int:
-	var total := maxi(frames, 1)
-	var index := int(floor(maxf(time, 0.0) * fps))
+## 播到第幾秒時該顯示第幾格（從 0 算起）。ends 是 timing() 回傳的每格結束時間。
+static func frame_at(time: float, ends: Array, mode: String) -> int:
+	if ends.is_empty():
+		return 0
+	var length: float = ends[ends.size() - 1]
+	var clock := maxf(time, 0.0)
 	if mode == LOOP:
-		return index % total
-	return mini(index, total - 1)
+		clock = fmod(clock, length)
+	for index in ends.size():
+		if clock < float(ends[index]):
+			return index
+	return ends.size() - 1
 
 
 ## 橫排圖上第 index 格的範圍（像素）。

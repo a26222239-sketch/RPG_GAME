@@ -285,23 +285,36 @@ func _test_frame_strip() -> void:
 	_check(FrameStrip.problem(3000, 512) != "" and FrameStrip.problem(512, 768) != "" and FrameStrip.count(3000, 512) == 0,
 		"格子不是正方形的圖會被擋下來")
 
-	# 沒有另外指定：6 格平均排進 0.5 秒，出手點在整段的六成
-	var plain := FrameStrip.timing(6, 0.5, 0.6, {})
-	_check(is_equal_approx(plain["fps"], 12.0) and is_equal_approx(plain["length"], 0.5) and is_equal_approx(plain["impact"], 0.3),
+	# 沒有另外指定：6 格平均排進 0.6 秒，出手點在整段的六成
+	var plain := FrameStrip.timing(6, 0.6, 0.6, {})
+	_check(is_equal_approx(plain["length"], 0.6) and is_equal_approx(plain["impact"], 0.36) and is_equal_approx(plain["ends"][0], 0.1),
 		"沒有指定時，格子平均排進預設的長度", str(plain))
-	# 美術指定了速度與出手的那一格
+	# 美術指定了每秒幾格與出手的那一格（從 1 算起）
 	var written := FrameStrip.timing(8, 0.9, 0.6, {"fps": 16, "impact_frame": 5})
 	_check(is_equal_approx(written["length"], 0.5) and is_equal_approx(written["impact"], 0.25),
 		"照美術寫的每秒格數與出手格來播", str(written))
+	# 美術指定了每一格各停多久，出手格從 0 算起（批次 1 沈清禾出劍的寫法）
+	var uneven := FrameStrip.timing(6, 0.5, 0.5, {"timings_ms": [60, 80, 60, 90, 130, 130], "impact_frame": 3}, 0)
+	_check(is_equal_approx(uneven["length"], 0.55) and is_equal_approx(uneven["impact"], 0.2),
+		"每格停多久可以不一樣，出手格也可以從 0 算起", str(uneven))
+	var shown: Array = []
+	for moment: float in [0.0, 0.059, 0.061, 0.139, 0.141, 0.21, 0.3, 0.5, 0.56, 9.0]:
+		shown.append(FrameStrip.frame_at(moment, uneven["ends"], FrameStrip.ONCE))
+	_check(shown == [0, 0, 1, 1, 2, 3, 4, 5, 5, 5], "照每格的時間換格", str(shown))
+	var timed := FrameStrip.timing(3, 0.3, 0.0, {"timings_ms": [45, 155, 120], "impact_frame": 1, "impact_time": 0.05}, 0)
+	_check(is_equal_approx(timed["impact"], 0.05), "同時寫了出手的秒數與格數時，用秒數", str(timed))
+	var ignored := FrameStrip.timing(4, 0.4, 0.5, {"timings_ms": [100, 100]})
+	_check(is_equal_approx(ignored["length"], 0.4), "每格時間的數量和格數對不上時，改用預設的速度", str(ignored))
 	# 只有一格：定格，停滿預設的長度
 	var still := FrameStrip.timing(1, 0.5, 0.6, {})
 	_check(is_equal_approx(still["length"], 0.5) and is_equal_approx(still["impact"], 0.3), "只有一格的圖停滿這個動作的時間", str(still))
 
+	var even: Array = FrameStrip.timing(4, 0.4, 0.0, {})["ends"]
 	var looped: Array = []
 	var held: Array = []
 	for step in 7:
-		looped.append(FrameStrip.frame_at(step * 0.1 + 0.01, 10.0, 4, FrameStrip.LOOP))
-		held.append(FrameStrip.frame_at(step * 0.1 + 0.01, 10.0, 4, FrameStrip.HOLD))
+		looped.append(FrameStrip.frame_at(step * 0.1 + 0.01, even, FrameStrip.LOOP))
+		held.append(FrameStrip.frame_at(step * 0.1 + 0.01, even, FrameStrip.HOLD))
 	_check(looped == [0, 1, 2, 3, 0, 1, 2], "循環的動作播完接回第一格", str(looped))
 	_check(held == [0, 1, 2, 3, 3, 3, 3], "不循環的動作停在最後一格", str(held))
 	_check(FrameStrip.region(2, 512) == Rect2(1024, 0, 512, 512), "第三格的位置在兩格寬之後")

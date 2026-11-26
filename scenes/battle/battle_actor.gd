@@ -5,7 +5,7 @@ extends Control
 ## 1. 節點底下有 AnimationPlayer 而且有同名動畫，就播那個動畫。
 ## 2. 美術交了這個動作的圖 assets/characters/{識別碼}/frames/{動畫名}.png，就照著播。
 ##    圖是橫排的逐格圖，每格是正方形；只有一格的話就是定格的姿勢。也可以一格一個檔（{動畫名}_01.png 起）。
-##    每秒幾格、第幾格是「打到」的瞬間，美術可以寫在同一個資料夾的 meta.json。
+##    每格停多久、哪一格是「打到」的瞬間，美術可以寫在同一個資料夾的 meta.json（欄位見 core/art/frame_strip.gd）。
 ## 3. 都沒有的話，拿站姿圖用位移、傾斜、明暗做出暫用的動作。
 ##
 ## 動作的畫面全部來自美術的圖，這裡只決定什麼時候播、播多快，
@@ -46,8 +46,8 @@ const ANIM_INFO := {
 	"victory": {"length": 1.0, "impact": 0.0},
 	"walk": {"length": 0.8, "impact": 0.0},
 }
-## 美術交的圖，各動作預設播多久（秒，設計文件 15.5 的建議長度）。格子平均排進這段時間，
-## 所以畫幾格都可以；想自己定速度，在 meta.json 寫 fps。招式專屬的動作沒列在這裡，用 SPECIAL_LENGTH。
+## 美術交的圖，各動作預設播多久（秒，設計文件 15.5 的建議長度）。美術沒有在 meta.json 寫速度時，
+## 格子平均排進這段時間，所以畫幾格都可以。招式專屬的動作沒列在這裡，用 SPECIAL_LENGTH。
 const STRIP_LENGTH := {
 	"idle": 1.2, "ready": 0.8, "charge": 1.0, "attack_light": 0.5, "attack_heavy": 0.9, "cast": 0.7,
 	"hit": 0.3, "guard": 0.4, "stagger": 1.0, "down": 0.8, "victory": 1.2, "walk": 0.8,
@@ -447,7 +447,8 @@ func _load_strip(anim: String) -> Dictionary:
 		return {}
 	var info: Dictionary = ANIM_INFO.get(anim, {"impact": 0.6})
 	var written: Variant = _strip_meta.get(anim)
-	var strip := FrameStrip.timing(frames.size(), float(STRIP_LENGTH.get(anim, SPECIAL_LENGTH)), float(info["impact"]), written if written is Dictionary else {})
+	var strip := FrameStrip.timing(frames.size(), float(STRIP_LENGTH.get(anim, SPECIAL_LENGTH)), float(info["impact"]),
+		written if written is Dictionary else {}, int(_strip_meta.get("frame_index_base", 1)))
 	strip["frames"] = frames
 	strip["mode"] = FrameStrip.LOOP if LOOP_ANIMS.has(anim) else (FrameStrip.HOLD if HOLD_ANIMS.has(anim) else FrameStrip.ONCE)
 	return strip
@@ -480,7 +481,7 @@ func _process(delta: float) -> void:
 		_back_to_rest()
 		return
 	var frames: Array = _strip["frames"]
-	_strip_sprite.texture = frames[FrameStrip.frame_at(_strip_time, float(_strip["fps"]), frames.size(), mode)]
+	_strip_sprite.texture = frames[FrameStrip.frame_at(_strip_time, _strip["ends"], mode)]
 
 
 func _stop_tweens() -> void:

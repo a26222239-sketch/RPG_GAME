@@ -1,0 +1,68 @@
+{
+	"attack_light": {
+		"duration": 0.55,
+		"frames": 6,
+		"impact_frame": 3,
+		"impact_time": 0.2,
+		"loop": false,
+		"timings_ms": [
+			60,
+			80,
+			60,
+			90,
+			130,
+			130
+		]
+	},
+	"character": "shen_peak",
+	"feet_anchor": [
+		256,
+		480
+	],
+	"frame_index_base": 0,
+	"frame_size": [
+		512,
+		512
+	],
+	"hit": {
+		"duration": 0.32,
+		"frames": 3,
+		"impact_frame": 1,
+		"impact_time": 0.045,
+		"loop": false,
+		"timings_ms": [
+			45,
+			155,
+			120
+		]
+	},
+	"hold_frames": "Attack frames 1 and 2 intentionally reuse anticipation. Start/end reuse the accepted stand pose.",
+	"idle": {
+		"duration": 1.2,
+		"frames": 6,
+		"loop": true,
+		"timings_ms": [
+			200,
+			200,
+			200,
+			200,
+			200,
+			200
+		]
+	},
+	"preview_atlas": {
+		"attack_light": [
+			6,
+			11
+		],
+		"hframes": 15,
+		"hit": [
+			12,
+			14
+		],
+		"idle": [
+			0,
+			5
+		]
+	}
+}

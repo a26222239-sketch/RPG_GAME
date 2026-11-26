@@ -4,7 +4,7 @@ extends Sprite2D
 ## 特效圖是 assets/vfx/{識別碼}.png：橫排的逐格圖，由左到右是播放順序，每格是正方形。
 ## 也可以一格一個檔（{識別碼}_01.png 起）。黑底或透明底都可以，這裡用加亮的方式疊上去，黑色會自動消失。
 ## 圖是美術交的；怎麼對位、播多快、染什麼顏色寫在 data/vfx.json，是程式這一邊的設定。
-## 美術想指定每秒幾格、第幾格是命中的瞬間，寫在 assets/vfx/meta.json：
+## 美術想指定每格停多久、第幾格是命中的瞬間，寫在 assets/vfx/meta.json（欄位見 core/art/frame_strip.gd）：
 ##   { "slash_sword": { "impact_frame": 3, "fps": 16 } }
 ##
 ## 某一組特效還沒有圖的時候 exists() 回傳 false，由呼叫的一方改用程式畫的暫用特效（battle_fx.gd）。
@@ -80,12 +80,12 @@ static func _load(fx_id: String) -> Dictionary:
 		var meta: Variant = JsonLoader.load_file(VFX_DIR + "meta.json")
 		if meta is Dictionary:
 			_meta = meta
-	var written: Dictionary = {}
-	if settings.has("impact_frame"):
-		written["impact_frame"] = settings["impact_frame"]
-	if _meta.get(fx_id) is Dictionary:
-		written.merge(_meta[fx_id], true)
-	var data := FrameStrip.timing(frames.size(), float(settings["length"]), 0.0, written)
+	# 美術寫的節奏優先；沒寫命中點時，用設定檔的預設（從 1 算起的第幾格）
+	var index_base := int(_meta.get("frame_index_base", 1))
+	var written: Dictionary = (_meta[fx_id] as Dictionary).duplicate() if _meta.get(fx_id) is Dictionary else {}
+	if not written.has("impact_time") and not written.has("impact_frame") and settings.has("impact_frame"):
+		written["impact_frame"] = int(settings["impact_frame"]) - 1 + index_base
+	var data := FrameStrip.timing(frames.size(), float(settings["length"]), 0.0, written, index_base)
 	data["frames"] = frames
 	data["settings"] = settings
 	return data
@@ -122,7 +122,7 @@ func _process(delta: float) -> void:
 		queue_free()
 		return
 	var frames: Array = _info["frames"]
-	texture = frames[FrameStrip.frame_at(_time, float(_info["fps"]), frames.size(), FrameStrip.LOOP if looping else FrameStrip.HOLD)]
+	texture = frames[FrameStrip.frame_at(_time, _info["ends"], FrameStrip.LOOP if looping else FrameStrip.HOLD)]
 
 
 static func _additive() -> CanvasItemMaterial:
