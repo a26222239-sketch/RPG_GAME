@@ -49,6 +49,17 @@ static func single_problem(width: int, height: int, side: int) -> String:
 	return ""
 
 
+## 特寫是連號的長方形圖，不使用角色／特效的正方形規則。
+static func cutin_problem(width: int, height: int, first: Vector2i = Vector2i.ZERO) -> String:
+	if width < 2560 or height < 720:
+		return "特寫至少要 2560×720，現在是 %d×%d" % [width, height]
+	if width * 720 != height * 2560:
+		return "特寫比例要和 2560×720 一致，現在是 %d×%d" % [width, height]
+	if first != Vector2i.ZERO and Vector2i(width, height) != first:
+		return "同一組特寫每張要一樣大，現在是 %d×%d，第一張是 %d×%d" % [width, height, first.x, first.y]
+	return ""
+
+
 ## 這組圖要怎麼播。動作的節奏由美術決定，寫在 meta.json；沒寫的才用預設值。
 ## base_length 是這個動作預設的長度（秒）；impact_ratio 是沒有指定時，「打到」的瞬間落在整段的幾成。
 ## meta 是美術為這個動作寫的設定，每個欄位都可以省略：

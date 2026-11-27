@@ -32,6 +32,17 @@ static func load_frames(base: String) -> Array[Texture2D]:
 			frames.append(cell)
 		return frames
 
+	return _load_numbered(base, false)
+
+
+## 特寫用同樣的連號檔名，但尺寸是 2560×720（或同比例放大）。
+static func load_cutin(base: String) -> Array[Texture2D]:
+	return _load_numbered(base, true)
+
+
+static func _load_numbered(base: String, cutin: bool) -> Array[Texture2D]:
+	var frames: Array[Texture2D] = []
+
 	for number in range(1, MAX_FRAMES + 1):
 		var path := FrameStrip.numbered(base, number) + ".png"
 		if not ResourceLoader.exists(path):
@@ -40,7 +51,7 @@ static func load_frames(base: String) -> Array[Texture2D]:
 		if texture == null:
 			return []
 		var first := Vector2i(texture.get_size()) if frames.is_empty() else Vector2i(frames[0].get_size())
-		var problem := FrameStrip.single_problem(texture.get_width(), texture.get_height(), first.x)
+		var problem := FrameStrip.cutin_problem(texture.get_width(), texture.get_height(), first) if cutin else FrameStrip.single_problem(texture.get_width(), texture.get_height(), first.x)
 		if problem != "":
 			push_warning("%s：%s" % [path, problem])
 			return []

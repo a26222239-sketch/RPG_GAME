@@ -35,7 +35,7 @@ var _time: float = 0.0
 
 ## 這一招有沒有美術交的特寫。
 static func has_art(character_id: String, move_id: String) -> bool:
-	return not FrameSet.load_frames(_base(character_id, move_id)).is_empty()
+	return not FrameSet.load_cutin(_base(character_id, move_id)).is_empty()
 
 
 static func _base(character_id: String, move_id: String) -> String:
@@ -47,7 +47,7 @@ static func _base(character_id: String, move_id: String) -> String:
 func play(character_id: String, move_id: String, from_left: bool, color: Color, move_title: String, who_title: String) -> void:
 	for child in get_children():
 		child.queue_free()
-	_frames = FrameSet.load_frames(_base(character_id, move_id))
+	_frames = FrameSet.load_cutin(_base(character_id, move_id))
 	_time = 0.0
 	visible = true
 	mouse_filter = Control.MOUSE_FILTER_IGNORE

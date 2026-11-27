@@ -28,6 +28,7 @@ func _initialize() -> void:
 		_test_prologue_art_exists()
 	_test_line_wrap()
 	_test_frame_strip()
+	_test_cutin_dimensions()
 	_test_anim_spec_sync()
 	_test_move_classes()
 	_test_vfx_settings()
@@ -293,6 +294,16 @@ func _same_dict(a: Dictionary, b: Dictionary) -> bool:
 		if not a.has(key) or not is_equal_approx(float(a[key]), float(b[key])):
 			return false
 	return true
+
+
+## 逐格圖的規則：幾格、播多快、第幾秒顯示第幾格。
+func _test_cutin_dimensions() -> void:
+	_check(FrameStrip.cutin_problem(2560, 720) == "", "特寫讀取接受 2560×720 橫幅")
+	_check(FrameStrip.cutin_problem(5120, 1440) == "", "特寫讀取接受同比例放大")
+	_check(FrameStrip.cutin_problem(1280, 360) != "", "特寫讀取拒絕低於交付解析度")
+	_check(FrameStrip.cutin_problem(2560, 700) != "", "特寫讀取拒絕錯誤比例")
+	_check(FrameStrip.cutin_problem(5120, 1440, Vector2i(2560, 720)) != "", "特寫同組尺寸不可變動")
+	_check(FrameStrip.single_problem(2560, 720, 2560) != "", "角色與特效維持正方形規格")
 
 
 ## 逐格圖的規則：幾格、播多快、第幾秒顯示第幾格。
