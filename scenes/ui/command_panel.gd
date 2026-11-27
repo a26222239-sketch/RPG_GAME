@@ -1,7 +1,8 @@
 extends Control
 ## 指令面板：上排 6 個招式按鈕，下排是守勢、調息、道具、逃跑。
 ## 橫放在畫面最下方，角色站在它的上面。
-## 劇本式戰鬥中，一次只有劇本指定的那一個按鈕可以按。
+## 劇本式戰鬥中，一次只有劇本指定的那一個按鈕可以按（show_commands）。
+## 自由戰鬥中，這個人能用的招式與指令都可以按（show_choices），招式按鈕多一行內力消耗與蓄招時間。
 
 signal move_pressed(move_id: String)
 signal command_pressed(command_id: String)
@@ -17,6 +18,9 @@ const COMMAND_SIZE := Vector2(222, 92)
 const GAP := 12.0
 const ROW_GAP := 10.0
 const TAG_SIZE := Vector2(82, 56)
+## 有第二行（內力、蓄招）時，勁路標籤縮小移到右上角。
+const SMALL_TAG_SIZE := Vector2(64, 44)
+const DETAIL_TOP := 52.0
 
 ## 整個面板需要的大小，給外層排版用。
 const PANEL_SIZE := Vector2(300 * 6 + 12 * 5, 104 + 10 + 92)
@@ -26,6 +30,9 @@ var _move_ids: Array[String] = []
 var _command_buttons: Dictionary = {}
 var _owner_label: Label
 var _enabled_button: Button
+## 自由戰鬥的模式：不只一個按鈕能按。
+var _choice_mode: bool = false
+var _selected: String = ""
 
 
 func _ready() -> void:
@@ -41,6 +48,8 @@ func _ready() -> void:
 ## owner_name 是這些招式的主人，顯示在下排左邊。
 func show_commands(moves: Array, enabled_kind: String, enabled_id: String, owner_name: String = "") -> void:
 	visible = true
+	_choice_mode = false
+	_selected = ""
 	_stop_pulse()
 	_enabled_button = null
 	_move_ids.clear()
@@ -54,6 +63,7 @@ func show_commands(moves: Array, enabled_kind: String, enabled_id: String, owner
 			button.text = str(move["name"])
 			button.alignment = HORIZONTAL_ALIGNMENT_LEFT
 			button.disabled = not (enabled_kind == "move" and enabled_id == str(move["id"]))
+			_layout_slot(button, "")
 			_set_force_tag(button, str(move.get("force", "")), not button.disabled)
 			if not button.disabled:
 				_enabled_button = button
@@ -62,6 +72,7 @@ func show_commands(moves: Array, enabled_kind: String, enabled_id: String, owner
 			button.text = "—"
 			button.alignment = HORIZONTAL_ALIGNMENT_CENTER
 			button.disabled = true
+			_layout_slot(button, "")
 			_set_force_tag(button, "", false)
 	for command: String in COMMANDS:
 		var button: Button = _command_buttons[command]
@@ -71,9 +82,96 @@ func show_commands(moves: Array, enabled_kind: String, enabled_id: String, owner
 	_start_pulse()
 
 
+## 自由戰鬥：顯示某個角色的所有選項，能用的都可以按。
+## moves 是 [{ id, name, force, detail, enabled }]，detail 是第二行（內力消耗、蓄招時間）；
+## commands 是能按的指令（"guard"、"rest"）。
+func show_choices(moves: Array, commands: Array, owner_name: String = "") -> void:
+	visible = true
+	_choice_mode = true
+	_selected = ""
+	_stop_pulse()
+	_enabled_button = null
+	_move_ids.clear()
+	set_note(owner_name)
+	for i in MOVE_SLOTS:
+		var button := _move_buttons[i]
+		if i < moves.size():
+			var move: Dictionary = moves[i]
+			_move_ids.append(str(move["id"]))
+			button.text = str(move["name"])
+			button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+			button.disabled = not bool(move.get("enabled", true))
+			_layout_slot(button, str(move.get("detail", "")))
+			_set_force_tag(button, str(move.get("force", "")), not button.disabled)
+		else:
+			_move_ids.append("")
+			button.text = "—"
+			button.alignment = HORIZONTAL_ALIGNMENT_CENTER
+			button.disabled = true
+			_layout_slot(button, "")
+			_set_force_tag(button, "", false)
+	for command: String in COMMANDS:
+		(_command_buttons[command] as Button).disabled = not commands.has(command)
+
+
+## 下排左邊那一格的文字。劇本式戰鬥寫招式的主人；自由戰鬥拿來寫提示（「燕回　選擇招式」）。
+func set_note(text: String) -> void:
+	_owner_label.text = text
+	_owner_label.visible = text != ""
+	_owner_label.reset_size()
+
+
+## 自由戰鬥：選了招式、正在選目標時，那一顆按鈕保持亮著。空字串表示取消。
+func set_selected(move_id: String) -> void:
+	_selected = move_id
+	for i in _move_buttons.size():
+		UiKit.set_button_active(_move_buttons[i], move_id != "" and i < _move_ids.size() and _move_ids[i] == move_id)
+
+
+func selected() -> String:
+	return _selected
+
+
+## 開發用（自動播放）：直接按某一個招式或指令。按不了時回傳 false。
+func press_move(move_id: String) -> bool:
+	var slot := _move_ids.find(move_id)
+	if not visible or slot < 0 or _move_buttons[slot].disabled:
+		return false
+	_move_buttons[slot].pressed.emit()
+	return true
+
+
+func press_command(command: String) -> bool:
+	var button: Button = _command_buttons.get(command)
+	if not visible or button == null or button.disabled:
+		return false
+	button.pressed.emit()
+	return true
+
+
+func can_press_move(move_id: String) -> bool:
+	var slot := _move_ids.find(move_id)
+	return visible and slot >= 0 and not _move_buttons[slot].disabled
+
+
+func can_press_command(command: String) -> bool:
+	return visible and _command_buttons.has(command) and not (_command_buttons[command] as Button).disabled
+
+
+func move_center(move_id: String) -> Vector2:
+	var slot := _move_ids.find(move_id)
+	return _move_buttons[slot].get_global_rect().get_center() if slot >= 0 else Vector2.ZERO
+
+
+func command_center(command: String) -> Vector2:
+	return (_command_buttons[command] as Button).get_global_rect().get_center()
+
+
 func hide_commands() -> void:
 	_stop_pulse()
 	_enabled_button = null
+	_choice_mode = false
+	_selected = ""
 	visible = false
 
 
@@ -84,6 +182,7 @@ func lock_all() -> void:
 	for button in _move_buttons:
 		button.disabled = true
 		(button.get_node("Tag") as Control).modulate = Color(1, 1, 1, 0.45)
+		(button.get_node("Detail") as Control).modulate = Color(1, 1, 1, 0.45)
 	for command: String in _command_buttons:
 		(_command_buttons[command] as Button).disabled = true
 
@@ -108,6 +207,14 @@ func enabled_center() -> Vector2:
 
 
 func _unhandled_key_input(event: InputEvent) -> void:
+	if _choice_mode and visible:
+		# 自由戰鬥：數字鍵 1–6 按對應的招式格
+		if event is InputEventKey and event.pressed and not event.echo:
+			var choice_slot := (event as InputEventKey).keycode - KEY_1
+			if choice_slot >= 0 and choice_slot < MOVE_SLOTS and not _move_buttons[choice_slot].disabled:
+				get_viewport().set_input_as_handled()
+				_move_buttons[choice_slot].pressed.emit()
+		return
 	if not has_enabled():
 		return
 	if event.is_action_pressed("ui_accept"):
@@ -145,6 +252,27 @@ func _set_force_tag(button: Button, force: String, enabled: bool) -> void:
 	tag.modulate = Color.WHITE if enabled else Color(1, 1, 1, 0.45)
 
 
+## 招式格的排法。detail 是第二行的文字；空字串時名字置中，勁路標籤放在右側正中（劇本式戰鬥的樣子）。
+func _layout_slot(button: Button, detail: String) -> void:
+	var detail_label := button.get_node("Detail") as Label
+	var tag := button.get_node("Tag") as Control
+	var two_rows := detail != ""
+	detail_label.text = detail
+	detail_label.visible = two_rows
+	detail_label.modulate = Color(1, 1, 1, 0.45) if button.disabled else Color.WHITE
+	var styles: Array = [button.get_meta("style_normal"), button.get_meta("style_active"),
+		button.get_theme_stylebox("pressed"), button.get_theme_stylebox("disabled")]
+	for style: StyleBoxTexture in styles:
+		# 兩行時名字往上移到第一行；8 是 UiKit.button_style 的預設邊距
+		style.content_margin_bottom = MOVE_SIZE.y - DETAIL_TOP if two_rows else 8.0
+		style.content_margin_top = 6.0 if two_rows else 8.0
+	var tag_size := SMALL_TAG_SIZE if two_rows else TAG_SIZE
+	tag.size = tag_size
+	tag.position = Vector2(MOVE_SIZE.x - tag_size.x - 12.0, 7.0 if two_rows else (MOVE_SIZE.y - tag_size.y) / 2.0)
+	var text := tag.get_node("Text") as Label
+	text.size = tag_size
+
+
 ## 現在該按的那一個按鈕換成「可按」的圖（GPT 畫的，邊框亮起來）。不再用閃爍。
 func _start_pulse() -> void:
 	if _enabled_button:
@@ -170,6 +298,13 @@ func _build() -> void:
 		button.pressed.connect(_on_move_button.bind(i))
 		add_child(button)
 		button.add_child(_build_force_tag())
+		var detail := UiKit.label("", 36, UiKit.JADE)
+		detail.name = "Detail"
+		detail.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		detail.position = Vector2(22, DETAIL_TOP - 4.0)
+		detail.size = Vector2(MOVE_SIZE.x - 34.0, MOVE_SIZE.y - DETAIL_TOP)
+		detail.visible = false
+		button.add_child(detail)
 		_move_buttons.append(button)
 
 	var y := MOVE_SIZE.y + ROW_GAP

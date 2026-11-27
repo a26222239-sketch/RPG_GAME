@@ -63,6 +63,9 @@ const HOLD_ANIMS := ["guard", "down"]
 static var _shadow_texture: GradientTexture2D
 
 var actor_id: String = ""
+## 圖放在哪個角色資料夾（assets/characters/）。通常和 actor_id 相同；
+## 同一種敵人上場好幾個時，actor_id 各不相同（bandit#1、bandit#2），圖共用一份。
+var art_id: String = ""
 var is_enemy: bool = false
 var home: Vector2 = Vector2.ZERO
 ## 身體的寬與高（不含兵器、披肩），用來決定頭頂介面的位置與近身時要站多近。
@@ -71,6 +74,9 @@ var body_size: Vector2 = Vector2(120, 400)
 ## 頭上的東西（行動條、狀態、蓄招、箭頭）放在這個節點裡。
 ## 戰鬥畫面會把它移到所有角色的上一層，才不會被站在前面的人擋住。
 var overlay: Control
+## 敵方蓄招的倒數條預設放在身旁、靠戰場中央的一側（序章只有一個敵人）。
+## 敵人有好幾個時會互相蓋住，改成和我方一樣放在頭上。
+var charge_above: bool = false
 
 var _color: Color = Color.WHITE
 var _flipped: bool = false
@@ -110,14 +116,15 @@ var _targetable: bool = false
 var _active: bool = false
 
 
-func setup(id: String, display_name: String, color: Color, enemy: bool, boss: bool = false) -> void:
+func setup(id: String, display_name: String, color: Color, enemy: bool, boss: bool = false, art: String = "") -> void:
 	actor_id = id
+	art_id = art if art != "" else id
 	is_enemy = enemy
 	_color = color
 	_frame = FRAME_BOSS if boss else FRAME_NORMAL
 	body_size = Vector2(_frame * 0.24, _frame * 0.78)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var meta: Variant = JsonLoader.load_file("res://assets/characters/%s/frames/meta.json" % actor_id)
+	var meta: Variant = JsonLoader.load_file("res://assets/characters/%s/frames/meta.json" % art_id)
 	if meta is Dictionary:
 		_strip_meta = meta
 	_build(display_name, _frame)
@@ -158,6 +165,28 @@ func chest_global() -> Vector2:
 ## 胸口在父節點座標裡的位置。
 func chest_position() -> Vector2:
 	return position + Vector2(0, -body_size.y * 0.55)
+
+
+## 每一格都會呼叫的版本：只有出現或消失時才重排頭上的東西。
+func update_gauge(ratio: float) -> void:
+	var show := ratio > 0.0
+	if show != _gauge.visible:
+		_gauge.visible = show
+		_layout_overhead()
+	_gauge.set_ratio(ratio, false)
+
+
+## 蓄招倒數條跑到哪裡（0 到 1），照戰鬥規則的時間走，不自己跑。
+func set_charge_progress(ratio: float) -> void:
+	_charge_bar.set_ratio(ratio, false)
+
+
+func is_charging() -> bool:
+	return _charge_box.visible
+
+
+func state_tag() -> String:
+	return _state_label.text if _state_label.visible else ""
 
 
 func set_gauge(ratio: float, duration: float = 0.0) -> Tween:
@@ -457,7 +486,7 @@ func _strip_for(anim: String) -> Dictionary:
 func _load_strip(anim: String) -> Dictionary:
 	if anim == "stand":
 		return {}
-	var frames := FrameSet.load_frames("res://assets/characters/%s/frames/%s" % [actor_id, anim])
+	var frames := FrameSet.load_frames("res://assets/characters/%s/frames/%s" % [art_id, anim])
 	if frames.is_empty():
 		return {}
 	var info: Dictionary = ANIM_INFO.get(anim, {"impact": 0.6})
@@ -549,14 +578,14 @@ func _layout_overhead() -> void:
 		_state_label.position = Vector2(-_state_label.size.x / 2.0, y)
 		y -= 8.0
 	if charging:
-		if is_enemy:
+		if is_enemy and not charge_above:
 			var half := body_size.x / 2.0 + 44.0
 			_charge_box.position = Vector2(-half - _charge_box.size.x, -body_size.y * 0.66)
 		else:
 			y -= _charge_box.size.y
 			_charge_box.position = Vector2(-_charge_box.size.x / 2.0, y)
 			y -= 8.0
-	_marker.visible = (_targetable or _active) and not (charging and not is_enemy)
+	_marker.visible = (_targetable or _active) and not (charging and (not is_enemy or charge_above))
 	if _marker.visible:
 		var base_y := y - _marker.size.y + 8.0
 		_marker.position = Vector2(-_marker.size.x / 2.0, base_y)
@@ -611,7 +640,7 @@ func _build(display_name: String, frame: float) -> void:
 	_strip_sprite.visible = false
 	_visual.add_child(_strip_sprite)
 
-	var path := "res://assets/characters/%s/frames/stand.png" % actor_id
+	var path := "res://assets/characters/%s/frames/stand.png" % art_id
 	if ResourceLoader.exists(path):
 		var texture: Texture2D = load(path)
 		_sprite = Sprite2D.new()
@@ -713,10 +742,11 @@ func _build_blocks(display_name: String) -> void:
 	weapon.position = Vector2(0.0 if not is_enemy else -w * 0.95, -h * 0.6)
 	_still.add_child(weapon)
 
+	# 名字寫在身體上：放在腳下的話，指令面板一出來就被蓋住
 	var name_label := UiKit.label(display_name, 36, UiKit.TEXT, 8)
-	name_label.position = Vector2(-150, 8)
+	name_label.position = Vector2(-150, -h * 0.42)
 	name_label.size = Vector2(300, 44)
-	add_child(name_label)
+	_still.add_child(name_label)
 
 
 static func _get_shadow_texture() -> GradientTexture2D:

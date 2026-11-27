@@ -1,29 +1,45 @@
 {
-  "yanhui_zhici": { "name": "MOVE_YANHUI_ZHICI", "class": "basic", "kind": "attack", "force": "kuai", "anim": "attack_light", "reach": "melee", "fx": "slash_sword" },
-  "yanhui_huifeng": { "name": "MOVE_YANHUI_HUIFENG", "class": "skill", "kind": "attack", "force": "gang", "anim": "attack_heavy", "reach": "melee", "fx": "slash_sword" },
-  "yanhui_ningqi": { "name": "MOVE_YANHUI_NINGQI", "class": "skill", "kind": "buff", "force": "", "anim": "cast", "reach": "self", "fx": "buff" },
+  "yanhui_zhici": { "name": "MOVE_YANHUI_ZHICI", "class": "basic", "kind": "attack", "force": "kuai", "anim": "attack_light", "reach": "melee", "fx": "slash_sword", "target": "enemy_single", "cost": 0, "charge": 0, "recover": 0.3, "power": 1.0, "posture": 12 },
+  "yanhui_huifeng": { "name": "MOVE_YANHUI_HUIFENG", "class": "skill", "kind": "attack", "force": "gang", "anim": "attack_heavy", "reach": "melee", "fx": "slash_sword", "target": "enemy_single", "cost": 18, "charge": 0, "recover": 0.8, "power": 1.6, "posture": 28 },
+  "yanhui_ningqi": { "name": "MOVE_YANHUI_NINGQI", "class": "skill", "kind": "buff", "force": "", "anim": "cast", "reach": "self", "fx": "buff", "target": "self", "cost": 20, "charge": 0, "recover": 0.3, "power": 0, "posture": 0, "effects": [{"status": "empower", "chance": 1.0}] },
   "yanhui_wanfa": { "name": "MOVE_YANHUI_WANFA", "class": "ultimate", "kind": "attack", "force": "rou", "anim": "attack_heavy", "reach": "melee", "fx": "yanhui_wanfa" },
 
-  "shen_dianxing": { "name": "MOVE_SHEN_DIANXING", "class": "basic", "kind": "attack", "force": "kuai", "anim": "attack_light", "reach": "melee", "fx": "slash_sword" },
-  "shen_duanliu": { "name": "MOVE_SHEN_DUANLIU", "class": "skill", "kind": "attack", "force": "kuai", "anim": "attack_light", "reach": "melee", "fx": "slash_sword" },
-  "shen_feihua": { "name": "MOVE_SHEN_FEIHUA", "class": "skill", "kind": "attack", "force": "kuai", "anim": "attack_heavy", "reach": "ranged", "fx": "slash_sword" },
-  "shen_qingshen": { "name": "MOVE_SHEN_QINGSHEN", "class": "skill", "kind": "buff", "force": "", "anim": "cast", "reach": "self", "fx": "buff" },
+  "shen_dianxing": { "name": "MOVE_SHEN_DIANXING", "class": "basic", "kind": "attack", "force": "kuai", "anim": "attack_light", "reach": "melee", "fx": "slash_sword", "target": "enemy_single", "cost": 0, "charge": 0, "recover": 0.2, "power": 0.9, "posture": 10 },
+  "shen_duanliu": { "name": "MOVE_SHEN_DUANLIU", "class": "skill", "kind": "attack", "force": "kuai", "anim": "attack_light", "reach": "melee", "fx": "slash_sword", "target": "enemy_single", "cost": 14, "charge": 0, "recover": 0.3, "power": 0.9, "posture": 22, "tags": ["interrupt"] },
+  "shen_feihua": { "name": "MOVE_SHEN_FEIHUA", "class": "skill", "kind": "attack", "force": "kuai", "anim": "attack_heavy", "reach": "ranged", "fx": "slash_sword", "target": "enemy_all", "cost": 30, "charge": 1.5, "recover": 0.8, "power": 0.9, "posture": 12 },
+  "shen_qingshen": { "name": "MOVE_SHEN_QINGSHEN", "class": "skill", "kind": "buff", "force": "", "anim": "cast", "reach": "self", "fx": "buff", "target": "self", "cost": 15, "charge": 0, "recover": 0.2, "power": 0, "posture": 0, "effects": [{"status": "light", "chance": 1.0}] },
   "shen_qianren": { "name": "MOVE_SHEN_QIANREN", "class": "ultimate", "kind": "attack", "force": "kuai", "anim": "attack_heavy", "reach": "melee", "fx": "shen_qianren" },
 
-  "huo_hengzhan": { "name": "MOVE_HUO_HENGZHAN", "class": "basic", "kind": "attack", "force": "gang", "anim": "attack_light", "reach": "melee", "fx": "slash_blade" },
-  "huo_bengshan": { "name": "MOVE_HUO_BENGSHAN", "class": "skill", "kind": "attack", "force": "gang", "anim": "attack_heavy", "reach": "melee", "fx": "slash_blade" },
-  "huo_xueren": { "name": "MOVE_HUO_XUEREN", "class": "skill", "kind": "attack", "force": "gang", "anim": "attack_light", "reach": "melee", "fx": "slash_blade" },
-  "huo_duanyue": { "name": "MOVE_HUO_DUANYUE", "class": "ultimate", "kind": "attack", "force": "gang", "anim": "attack_heavy", "reach": "melee", "fx": "huo_duanyue" },
+  "huo_hengzhan": { "name": "MOVE_HUO_HENGZHAN", "class": "basic", "kind": "attack", "force": "gang", "anim": "attack_light", "reach": "melee", "fx": "slash_blade", "target": "enemy_single", "cost": 0, "charge": 0, "recover": 0.5, "power": 1.1, "posture": 18 },
+  "huo_bengshan": { "name": "MOVE_HUO_BENGSHAN", "class": "skill", "kind": "attack", "force": "gang", "anim": "attack_heavy", "reach": "melee", "fx": "slash_blade", "target": "enemy_single", "cost": 25, "charge": 1.0, "recover": 1.0, "power": 1.5, "posture": 45 },
+  "huo_xueren": { "name": "MOVE_HUO_XUEREN", "class": "skill", "kind": "attack", "force": "gang", "anim": "attack_light", "reach": "melee", "fx": "slash_blade", "target": "enemy_single", "cost": 20, "charge": 0, "recover": 0.6, "power": 1.3, "posture": 20, "effects": [{"status": "bleed", "chance": 0.7}] },
+  "huo_duanyue": { "name": "MOVE_HUO_DUANYUE", "class": "ultimate", "kind": "attack", "force": "gang", "anim": "attack_heavy", "reach": "melee", "fx": "huo_duanyue", "target": "enemy_single", "cost": 50, "charge": 3.0, "recover": 1.5, "power": 3.5, "posture": 40 },
 
-  "wen_dianmai": { "name": "MOVE_WEN_DIANMAI", "class": "basic", "kind": "attack", "force": "rou", "anim": "attack_light", "reach": "melee", "fx": "seal" },
-  "wen_huichun": { "name": "MOVE_WEN_HUICHUN", "class": "skill", "kind": "heal", "force": "", "anim": "cast", "reach": "ranged", "fx": "heal" },
-  "wen_huxin": { "name": "MOVE_WEN_HUXIN", "class": "skill", "kind": "buff", "force": "", "anim": "cast", "reach": "ranged", "fx": "buff" },
-  "wen_fengxue": { "name": "MOVE_WEN_FENGXUE", "class": "skill", "kind": "control", "force": "rou", "anim": "cast", "reach": "ranged", "fx": "wen_fengxue" },
+  "wen_dianmai": { "name": "MOVE_WEN_DIANMAI", "class": "basic", "kind": "attack", "force": "rou", "anim": "attack_light", "reach": "melee", "fx": "seal", "target": "enemy_single", "cost": 0, "charge": 0, "recover": 0.3, "power": 0.8, "posture": 10 },
+  "wen_huichun": { "name": "MOVE_WEN_HUICHUN", "class": "skill", "kind": "heal", "force": "", "anim": "cast", "reach": "ranged", "fx": "heal", "target": "ally_single", "cost": 22, "charge": 0.5, "recover": 0.3, "power": 2.2, "posture": 0 },
+  "wen_huxin": { "name": "MOVE_WEN_HUXIN", "class": "skill", "kind": "buff", "force": "", "anim": "cast", "reach": "ranged", "fx": "buff", "target": "ally_single", "cost": 18, "charge": 0, "recover": 0.3, "power": 0, "posture": 0, "effects": [{"status": "protect", "chance": 1.0}] },
+  "wen_fengxue": { "name": "MOVE_WEN_FENGXUE", "class": "skill", "kind": "control", "force": "rou", "anim": "cast", "reach": "ranged", "fx": "wen_fengxue", "target": "enemy_single", "cost": 28, "charge": 1.0, "recover": 0.5, "power": 0.6, "posture": 10, "effects": [{"status": "seal", "chance": 0.6}] },
   "wen_bianzhao": { "name": "MOVE_WEN_BIANZHAO", "class": "ultimate", "kind": "heal", "force": "", "anim": "cast", "reach": "ranged", "fx": "wen_bianzhao" },
 
   "tianmo_palm": { "name": "MOVE_TIANMO_PALM", "class": "basic", "kind": "attack", "force": "gang", "anim": "attack_light", "reach": "melee", "fx": "palm" },
   "tianmo_sleeve": { "name": "MOVE_TIANMO_SLEEVE", "class": "basic", "kind": "attack", "force": "rou", "anim": "attack_light", "reach": "ranged", "fx": "palm" },
   "tianmo_repel": { "name": "MOVE_TIANMO_REPEL", "class": "skill", "kind": "attack", "force": "gang", "anim": "attack_light", "reach": "ranged", "fx": "palm" },
   "tianmo_fushi": { "name": "MOVE_TIANMO_FUSHI", "class": "ultimate", "kind": "attack", "force": "gang", "anim": "attack_heavy", "reach": "ranged", "fx": "tianmo_fushi" },
-  "tianmo_guixu": { "name": "MOVE_TIANMO_GUIXU", "class": "ultimate", "kind": "attack", "force": "", "anim": "cast", "reach": "self", "fx": "tianmo_guixu" }
+  "tianmo_guixu": { "name": "MOVE_TIANMO_GUIXU", "class": "ultimate", "kind": "attack", "force": "", "anim": "cast", "reach": "self", "fx": "tianmo_guixu" },
+
+  "yanhui_guiyi": { "name": "MOVE_YANHUI_GUIYI", "class": "ultimate", "kind": "attack", "force": "rou", "anim": "attack_heavy", "reach": "melee", "fx": "slash_sword", "target": "enemy_single", "cost": 45, "charge": 2.5, "recover": 1.0, "power": 3.2, "posture": 30 },
+
+  "bandit_hack": { "name": "MOVE_BANDIT_HACK", "class": "basic", "kind": "attack", "force": "gang", "anim": "attack_light", "reach": "melee", "fx": "slash_blade", "target": "enemy_single", "cost": 0, "charge": 0, "recover": 0.5, "power": 1.0, "posture": 12 },
+  "bandit_cleave": { "name": "MOVE_BANDIT_CLEAVE", "class": "skill", "kind": "attack", "force": "gang", "anim": "attack_heavy", "reach": "melee", "fx": "slash_blade", "target": "enemy_single", "cost": 0, "charge": 1.5, "recover": 0.8, "power": 1.6, "posture": 22 },
+
+  "archer_shot": { "name": "MOVE_ARCHER_SHOT", "class": "basic", "kind": "attack", "force": "kuai", "anim": "attack_light", "reach": "ranged", "fx": "slash_sword", "target": "enemy_single", "cost": 0, "charge": 0, "recover": 0.4, "power": 1.1, "posture": 8 },
+  "archer_volley": { "name": "MOVE_ARCHER_VOLLEY", "class": "skill", "kind": "attack", "force": "kuai", "anim": "attack_heavy", "reach": "ranged", "fx": "slash_sword", "target": "enemy_all", "cost": 0, "charge": 1.5, "recover": 0.8, "power": 0.7, "posture": 6 },
+
+  "chief_axe": { "name": "MOVE_CHIEF_AXE", "class": "basic", "kind": "attack", "force": "gang", "anim": "attack_light", "reach": "melee", "fx": "slash_blade", "target": "enemy_single", "cost": 0, "charge": 0, "recover": 0.6, "power": 1.3, "posture": 20 },
+  "chief_kaishan": { "name": "MOVE_CHIEF_KAISHAN", "class": "skill", "kind": "attack", "force": "gang", "anim": "attack_heavy", "reach": "melee", "fx": "slash_blade", "target": "enemy_single", "cost": 0, "charge": 3.0, "recover": 1.2, "power": 3.4, "posture": 40, "tags": ["big"] },
+
+  "third_nutao": { "name": "MOVE_THIRD_NUTAO", "class": "basic", "kind": "attack", "force": "gang", "anim": "attack_light", "reach": "melee", "fx": "slash_blade", "target": "enemy_single", "cost": 0, "charge": 0, "recover": 0.5, "power": 1.6, "posture": 22 },
+  "third_dusha": { "name": "MOVE_THIRD_DUSHA", "class": "skill", "kind": "attack", "force": "kuai", "anim": "attack_light", "reach": "ranged", "fx": "debuff", "target": "enemy_all", "cost": 0, "charge": 0, "recover": 0.5, "power": 0.6, "posture": 8, "effects": [{"status": "poison", "chance": 0.6}] },
+  "third_zhenmai": { "name": "MOVE_THIRD_ZHENMAI", "class": "skill", "kind": "attack", "force": "rou", "anim": "attack_heavy", "reach": "melee", "fx": "palm", "target": "enemy_single", "cost": 0, "charge": 1.0, "recover": 0.6, "power": 1.2, "posture": 25, "effects": [{"status": "internal", "chance": 0.7}] },
+  "third_fuhai": { "name": "MOVE_THIRD_FUHAI", "class": "ultimate", "kind": "attack", "force": "gang", "anim": "attack_heavy", "reach": "ranged", "fx": "third_fuhai", "target": "enemy_all", "cost": 0, "charge": 4.0, "recover": 1.5, "power": 3.6, "posture": 35, "tags": ["big"] }
 }

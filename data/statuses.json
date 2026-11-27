@@ -1,0 +1,10 @@
+{
+  "bleed": { "name": "STATE_BLEED", "duration": 6, "debuff": true },
+  "poison": { "name": "STATE_POISON", "duration": 10, "debuff": true, "max_stacks": 3 },
+  "internal": { "name": "STATE_INTERNAL", "duration": 8, "debuff": true },
+  "seal": { "name": "STATE_SEAL", "duration": 3, "debuff": true },
+  "slow": { "name": "STATE_SLOW", "duration": 8, "debuff": true },
+  "empower": { "name": "STATE_EMPOWER", "duration": 12, "debuff": false },
+  "protect": { "name": "STATE_PROTECT", "duration": 12, "debuff": false },
+  "light": { "name": "STATE_LIGHT", "duration": 12, "debuff": false }
+}

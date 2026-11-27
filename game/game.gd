@@ -10,7 +10,10 @@ extends Node
 ##   --speed=倍數      加快時間
 ##   --read=倍數       自動播放時留給人閱讀的時間；0 是立刻按（預設），1 是正常閱讀速度。錄影時使用
 ##   --skip-at=拍數    播到第幾拍時按下「跳過」
-##   --replay          播完後按一次「重看」，第二次播完才結束
+##   --replay          播完後按一次「重看」，第二次播完才結束（戰鬥試煉是「再戰一次」）
+##   --encounter=識別碼  搭配 --autoplay：從標題畫面點進「戰鬥試煉」，打這一場（例如 test_d）
+##   --seed=數字       戰鬥試煉的亂數種子（不給的話每場隨機）
+##   --auto-party      戰鬥試煉一開始就讓四個人全部自動
 
 const GameData := preload("res://core/data/game_data.gd")
 
@@ -23,6 +26,13 @@ var read_scale: float = 0.0
 var shots_dir: String = ""
 var skip_at: int = -1
 var replays_left: int = 0
+var dev_encounter: String = ""
+var dev_seed: int = -1
+var auto_party: bool = false
+## 標題畫面選好的戰鬥試煉，換到戰鬥畫面後由它讀取。
+var pending_encounter: String = ""
+## 從戰鬥試煉按「回到選單」時，標題畫面直接打開試煉清單。
+var open_trials: bool = false
 var _shot_count: int = 0
 var _injecting: bool = false
 
@@ -78,6 +88,12 @@ func _read_args() -> void:
 			skip_at = arg.trim_prefix("--skip-at=").to_int()
 		elif arg == "--replay":
 			replays_left = 1
+		elif arg.begins_with("--encounter="):
+			dev_encounter = arg.trim_prefix("--encounter=")
+		elif arg.begins_with("--seed="):
+			dev_seed = arg.trim_prefix("--seed=").to_int()
+		elif arg == "--auto-party":
+			auto_party = true
 
 
 ## 開發用：在畫面上的某一點模擬一次滑鼠左鍵點擊。
@@ -106,6 +122,11 @@ func click_at(pos: Vector2, still_wanted: Callable = Callable()) -> void:
 
 ## 開發用：模擬按一下 Enter。
 func press_accept(still_wanted: Callable = Callable()) -> void:
+	await press_key(KEY_ENTER, still_wanted)
+
+
+## 開發用：模擬按一下鍵盤上的某個鍵。
+func press_key(keycode: Key, still_wanted: Callable = Callable()) -> void:
 	while _injecting:
 		await get_tree().process_frame
 	if still_wanted.is_valid() and not still_wanted.call():
@@ -113,8 +134,8 @@ func press_accept(still_wanted: Callable = Callable()) -> void:
 	_injecting = true
 	for pressed: bool in [true, false]:
 		var event := InputEventKey.new()
-		event.keycode = KEY_ENTER
-		event.physical_keycode = KEY_ENTER
+		event.keycode = keycode
+		event.physical_keycode = keycode
 		event.pressed = pressed
 		Input.parse_input_event(event)
 		await get_tree().process_frame

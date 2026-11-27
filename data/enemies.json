@@ -1,0 +1,132 @@
+{
+  "bandit": {
+    "name": "ENEMY_BANDIT",
+    "color": "#8a6a4a",
+    "attrs": {
+      "jingu": 12,
+      "neixi": 6,
+      "shenfa": 10,
+      "wuxing": 5
+    },
+    "inner_art": {
+      "force": "gang",
+      "guard": 0,
+      "regen": 1.0
+    },
+    "hp_scale": 0.65,
+    "moves": [
+      {
+        "move": "bandit_hack",
+        "weight": 3
+      },
+      {
+        "move": "bandit_cleave",
+        "weight": 1
+      }
+    ],
+    "rules": [],
+    "targeting": "random"
+  },
+  "archer": {
+    "name": "ENEMY_ARCHER",
+    "color": "#7a8a4a",
+    "attrs": {
+      "jingu": 8,
+      "neixi": 6,
+      "shenfa": 18,
+      "wuxing": 5
+    },
+    "inner_art": {
+      "force": "kuai",
+      "guard": 0,
+      "regen": 1.0
+    },
+    "hp_scale": 0.55,
+    "moves": [
+      {
+        "move": "archer_shot",
+        "weight": 3
+      },
+      {
+        "move": "archer_volley",
+        "weight": 1
+      }
+    ],
+    "rules": [],
+    "targeting": "random"
+  },
+  "bandit_chief": {
+    "name": "ENEMY_BANDIT_CHIEF",
+    "color": "#9a4a3a",
+    "attrs": {
+      "jingu": 24,
+      "neixi": 10,
+      "shenfa": 12,
+      "wuxing": 8
+    },
+    "inner_art": {
+      "force": "gang",
+      "guard": 8,
+      "regen": 1.0
+    },
+    "hp_scale": 1.8,
+    "moves": [
+      {
+        "move": "chief_axe",
+        "weight": 3
+      },
+      {
+        "move": "chief_kaishan",
+        "weight": 2
+      }
+    ],
+    "rules": [],
+    "targeting": "random"
+  },
+  "third_chief": {
+    "name": "ENEMY_THIRD_CHIEF",
+    "color": "#3a5a8a",
+    "attrs": {
+      "jingu": 28,
+      "neixi": 22,
+      "shenfa": 30,
+      "wuxing": 12
+    },
+    "inner_art": {
+      "force": "gang",
+      "guard": 15,
+      "regen": 3.0
+    },
+    "hp_scale": 2.6,
+    "boss": true,
+    "moves": [
+      {
+        "move": "third_nutao",
+        "weight": 4
+      },
+      {
+        "move": "third_dusha",
+        "weight": 2
+      },
+      {
+        "move": "third_zhenmai",
+        "weight": 2
+      },
+      {
+        "move": "third_fuhai",
+        "weight": 2
+      }
+    ],
+    "rules": [
+      {
+        "when": {
+          "foe_charging": true
+        },
+        "use": "third_zhenmai",
+        "target": "charging",
+        "chance": 0.5
+      }
+    ],
+    "targeting": "random"
+  }
+}

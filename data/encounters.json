@@ -1,0 +1,31 @@
+{
+  "test_a": {
+    "name": "ENC_TEST_A",
+    "note": "ENC_TEST_A_NOTE",
+    "background": "test_ground",
+    "party": ["yanhui", "shen", "huo", "wen"],
+    "enemies": ["bandit", "bandit", "archer"]
+  },
+  "test_b": {
+    "name": "ENC_TEST_B",
+    "note": "ENC_TEST_B_NOTE",
+    "background": "test_ground",
+    "party": ["yanhui", "shen", "huo", "wen"],
+    "enemies": ["bandit", "bandit", "bandit", "archer"]
+  },
+  "test_c": {
+    "name": "ENC_TEST_C",
+    "note": "ENC_TEST_C_NOTE",
+    "background": "test_ground",
+    "party": ["yanhui", "shen", "huo", "wen"],
+    "enemies": ["bandit_chief", "bandit", "bandit"]
+  },
+  "test_d": {
+    "name": "ENC_TEST_D",
+    "note": "ENC_TEST_D_NOTE",
+    "background": "test_ground",
+    "party": ["yanhui", "shen", "huo", "wen"],
+    "enemies": ["third_chief", "bandit", "archer"],
+    "boss": true
+  }
+}

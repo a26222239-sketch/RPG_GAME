@@ -1,0 +1,6 @@
+{
+  "guiyuan": { "name": "ART_GUIYUAN", "force": "rou", "guard": 10, "regen": 2.0 },
+  "chaoyang": { "name": "ART_CHAOYANG", "force": "kuai", "guard": 6, "regen": 1.5 },
+  "nutao": { "name": "ART_NUTAO", "force": "gang", "guard": 12, "regen": 1.0 },
+  "huichun": { "name": "ART_HUICHUN", "force": "rou", "guard": 8, "regen": 2.5 }
+}

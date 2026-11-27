@@ -9,6 +9,7 @@ const GameData := preload("res://core/data/game_data.gd")
 const ScriptedBattle := preload("res://core/scripted/scripted_battle.gd")
 const LineWrap := preload("res://core/text/line_wrap.gd")
 const FrameStrip := preload("res://core/art/frame_strip.gd")
+const BattleSim := preload("res://core/battle/battle_sim.gd")
 
 var _passed: int = 0
 var _failed: int = 0
@@ -31,6 +32,16 @@ func _initialize() -> void:
 	_test_move_classes()
 	_test_vfx_settings()
 	_test_delivered_strips()
+	if _failed == 0:
+		_test_battle_numbers()
+		_test_battle_hits()
+		_test_battle_statuses()
+		_test_battle_commands()
+		_test_battle_waits_for_player()
+		_test_battle_ai()
+		_test_battle_is_repeatable()
+		_test_battle_encounters_finish()
+		_test_battle_validator()
 	print("\n測試結果：通過 %d，失敗 %d" % [_passed, _failed])
 	quit(1 if _failed > 0 else 0)
 
@@ -40,7 +51,11 @@ func _initialize() -> void:
 func _test_data_loads() -> void:
 	var ok := _data.load_all()
 	_check(ok, "資料載入並通過驗證", "；".join(_data.errors))
-	_check(_data.characters.size() == 5, "序章有 5 個角色")
+	var actors := 0
+	for char_id: String in _data.characters:
+		if not _data.is_fighter(char_id):
+			actors += 1
+	_check(actors == 5, "序章有 5 個只演劇本的角色", str(actors))
 	_check(_data.text("NO_SUCH_KEY") == "NO_SUCH_KEY", "找不到的文字鍵會原樣回傳")
 
 
@@ -436,6 +451,341 @@ func _check_frame_folder(folder: String, names: Array, skip: Array, unknown: Str
 		if problem != "":
 			problems.append("%s：%s" % [path, problem])
 	return total
+
+
+# ---------------------------------------------------------------- 戰鬥規則（第 4 章）
+
+## 新的一場戰鬥。manual 為真時我方全部手動，否則照預設戰術自動。
+func _new_battle(encounter: String, seed_value: int = 1, manual: bool = false) -> BattleSim:
+	var sim := BattleSim.new()
+	sim.setup(_data, encounter, seed_value)
+	if not manual:
+		for u in sim.side_units("party", false):
+			u.auto = "support" if u.id == "wen" else "attack"
+	return sim
+
+
+## 讓 src 打 tgt 一下，保證不會閃避（暫時把守方的身法壓低，打完還原）。回傳傷害事件。
+func _clean_hit(sim: BattleSim, src: BattleSim.Unit, tgt: BattleSim.Unit, move_id: String) -> Dictionary:
+	var shenfa: float = tgt.attrs["shenfa"]
+	tgt.attrs["shenfa"] = float(src.attrs["shenfa"]) - 100.0
+	sim._events = []
+	sim._hit(src, tgt, move_id)
+	tgt.attrs["shenfa"] = shenfa
+	for e in sim._events:
+		if e["type"] == "damage":
+			return e
+	return {}
+
+
+## 衍生數值與 13.2、13.3 的表一致，算例與 4.5 一致。
+func _test_battle_numbers() -> void:
+	var sim := _new_battle("test_d")
+	var expect := {
+		"yanhui": [560, 194, 114, 19.2], "shen": [480, 162, 102, 22.4],
+		"huo": [650, 146, 124, 16.8], "wen": [500, 242, 108, 17.6],
+	}
+	var wrong: Array[String] = []
+	for id: String in expect:
+		var u := sim.unit(id)
+		var e: Array = expect[id]
+		if u.hp_max != e[0] or u.mp_max != e[1] or roundi(u.posture_max) != e[2] or not is_equal_approx(sim.speed(u), e[3]):
+			wrong.append("%s %d/%d/%d/%.1f" % [id, u.hp_max, u.mp_max, u.posture_max, sim.speed(u)])
+	_check(wrong.is_empty(), "四人的氣血、內力、架勢、速度和 13.2 的表一致", "、".join(wrong))
+	var boss := sim.unit("third_chief#1")
+	_check(boss != null and boss.boss and abs(boss.hp_max - 1898) <= 1, "三當家氣血約 1,898，是首領", str(boss.hp_max if boss else -1))
+	var a := _new_battle("test_a")
+	var bandit := a.unit("bandit#1")
+	_check(abs(bandit.hp_max - 266) <= 1 and abs(a.unit("archer#1").hp_max - 193) <= 1, "嘍囉約 266、弓手約 193", "%d %d" % [bandit.hp_max, a.unit("archer#1").hp_max])
+	var b := _new_battle("test_b")
+	var names: Array[String] = []
+	for u in b.side_units("enemy"):
+		names.append(u.display_name)
+	_check(names[0].ends_with("甲") and names[2].ends_with("丙") and not names[3].ends_with("甲"), "同種敵人有好幾個時名字後面加甲乙丙", "、".join(names))
+	var expected := a.expected_damage(a.unit("yanhui"), "yanhui_huifeng", bandit)
+	_check(roundi(expected) == 76, "算例：燕回迴風斬打嘍囉約 76", "%.2f" % expected)
+	_check(is_equal_approx(a.matchup("gang", "kuai"), 1.25) and is_equal_approx(a.matchup("kuai", "gang"), 0.8)
+		and is_equal_approx(a.matchup("rou", "gang"), 1.25) and is_equal_approx(a.matchup("kuai", "rou"), 1.25)
+		and is_equal_approx(a.matchup("gang", "gang"), 1.0), "勁路相剋：剛剋快、柔剋剛、快剋柔")
+
+
+## 出手：傷害浮動、破綻、截招、守勢、閃避。
+func _test_battle_hits() -> void:
+	var sim := _new_battle("test_a")
+	var yanhui := sim.unit("yanhui")
+	var bandit := sim.unit("bandit#1")
+	var base := sim.expected_damage(yanhui, "yanhui_huifeng", bandit)
+	var e := _clean_hit(sim, yanhui, bandit, "yanhui_huifeng")
+	var scale := 1.5 if not e.is_empty() and e["crit"] else 1.0
+	_check(not e.is_empty() and e["amount"] >= floori(base * scale * 0.95) and e["amount"] <= ceili(base * scale * 1.05), "傷害落在 ±5% 的浮動內（會心 ×1.5）", str(e))
+	_check(is_equal_approx(bandit.posture, bandit.posture_max - 28), "架勢傷害照招式架勢值扣", str(bandit.posture))
+
+	# 架勢打空 → 破綻 5 秒；破綻中傷害 ×1.5，不再扣架勢
+	bandit.posture = 5
+	_clean_hit(sim, yanhui, bandit, "yanhui_zhici")
+	_check(bandit.state == "stagger" and bandit.timer == 150, "架勢歸零進入破綻 5 秒", "%s %d" % [bandit.state, bandit.timer])
+	var plain := sim.expected_damage(yanhui, "yanhui_zhici", sim.unit("bandit#2"))
+	_check(is_equal_approx(sim.expected_damage(yanhui, "yanhui_zhici", bandit), plain * 1.5), "破綻中受到的傷害 ×1.5")
+	for i in 150:
+		sim.step()
+	_check(bandit.state != "stagger" and is_equal_approx(bandit.posture, bandit.posture_max), "破綻結束後架勢回滿", "%s %.1f" % [bandit.state, bandit.posture])
+
+	# 截招：對蓄招中的人，帶截招的招式架勢傷害 ×2.5，一般招式 ×1.5；打空就打斷
+	var c := _new_battle("test_c")
+	var chief := c.unit("bandit_chief#1")
+	var shen := c.unit("shen")
+	chief.state = "charge"
+	chief.timer = 90
+	chief.pending = {"move": "chief_kaishan", "target": "huo"}
+	var before := chief.posture
+	_clean_hit(c, shen, chief, "shen_duanliu")
+	var cut := before - chief.posture
+	_check(is_equal_approx(cut, 22 * 0.8 * 2.5), "截招打蓄招中的人：架勢傷害 ×2.5（快打剛被剋 ×0.8）", "%.2f" % cut)
+	before = chief.posture
+	_clean_hit(c, shen, chief, "shen_dianxing")
+	_check(is_equal_approx(before - chief.posture, 10 * 0.8 * 1.5), "一般招式打蓄招中的人：架勢傷害 ×1.5", "%.2f" % (before - chief.posture))
+	chief.posture = 1
+	c._events = []
+	c._hit(shen, chief, "shen_duanliu")
+	var interrupted := c._events.any(func(x: Dictionary) -> bool: return x["type"] == "interrupt")
+	_check(interrupted and chief.state == "stagger" and chief.pending.is_empty() and c.stats["interrupts"] == 1, "蓄招中架勢歸零：招式被打斷並露出破綻")
+
+	# 守勢：傷害 ×0.6、架勢傷害 ×0.4
+	var g := _new_battle("test_a")
+	var huo := g.unit("huo")
+	var archer := g.unit("archer#1")
+	var open_damage := g.expected_damage(archer, "archer_shot", huo)
+	huo.guarding = true
+	_check(is_equal_approx(g.expected_damage(archer, "archer_shot", huo), open_damage * 0.6), "守勢中受到的傷害 ×0.6")
+	before = huo.posture
+	_clean_hit(g, archer, huo, "archer_shot")
+	_check(is_equal_approx(before - huo.posture, 8 * 0.8 * 0.4), "守勢中架勢傷害 ×0.4（快打剛被剋 ×0.8）", "%.2f" % (before - huo.posture))
+
+	# 閃避：破綻中閃不掉；閃避率上限 30%
+	var d := _new_battle("test_a")
+	var fast := d.unit("shen")
+	var slow := d.unit("bandit#1")
+	fast.attrs["shenfa"] = 500
+	_check(is_equal_approx(d.dodge_rate(slow, fast), 0.3), "閃避率最多 30%")
+	slow.state = "stagger"
+	var dodged := 0
+	for i in 40:
+		d._events = []
+		d._hit(fast, slow, "shen_dianxing")
+		if d._events.any(func(x: Dictionary) -> bool: return x["type"] == "dodge"):
+			dodged += 1
+	_check(dodged == 0, "破綻中無法閃避")
+
+
+## 狀態效果（4.8）。
+func _test_battle_statuses() -> void:
+	var sim := _new_battle("test_d")
+	var boss := sim.unit("third_chief#1")
+	var huo := sim.unit("huo")
+	var wen := sim.unit("wen")
+	var always := func(status: String) -> Dictionary: return {"effects": [{"status": status, "chance": 1.0}]}
+
+	sim._apply_effects(boss, huo, always.call("poison"))
+	sim._apply_effects(boss, huo, always.call("poison"))
+	sim._apply_effects(boss, huo, always.call("poison"))
+	sim._apply_effects(boss, huo, always.call("poison"))
+	_check(int(huo.statuses["poison"]["stacks"]) == 3, "中毒最多疊 3 層", str(huo.statuses["poison"]))
+	var hp := huo.hp
+	sim._per_second(huo)
+	_check(hp - huo.hp == roundi(650 * 0.01 * 3), "中毒每秒損失氣血上限 1% × 層數", str(hp - huo.hp))
+	sim._apply_effects(huo, boss, always.call("bleed"))
+	hp = boss.hp
+	sim._per_second(boss)
+	_check(hp - boss.hp == roundi(boss.hp_max * 0.015 * 0.5), "首領流血減半", str(hp - boss.hp))
+
+	sim._apply_effects(boss, wen, always.call("internal"))
+	var mp := wen.mp - 50
+	wen.mp = mp
+	sim._per_second(wen)
+	_check(is_equal_approx(wen.mp, mp) and is_equal_approx(sim.cost_of(wen, "wen_huichun"), 22 * 1.25), "內傷：內力不回復、消耗 ×1.25")
+
+	var shen := sim.unit("shen")
+	var speed := sim.speed(shen)
+	sim._apply_effects(shen, shen, always.call("light"))
+	_check(is_equal_approx(sim.speed(shen), speed * 1.3), "輕身：速度 ×1.3")
+	var atk := sim.attack_value(sim.unit("yanhui"), "gang")
+	sim._apply_effects(sim.unit("yanhui"), sim.unit("yanhui"), always.call("empower"))
+	_check(is_equal_approx(sim.attack_value(sim.unit("yanhui"), "gang"), atk * 1.25), "運功：攻擊值 ×1.25")
+	var plain := sim.expected_damage(boss, "third_nutao", huo)
+	sim._apply_effects(wen, huo, always.call("protect"))
+	_check(is_equal_approx(sim.expected_damage(boss, "third_nutao", huo), plain * 0.75), "護體：受到的傷害 ×0.75")
+
+	# 點穴：行動條停止 3 秒；對蓄招中的人無效
+	var bandit := sim.unit("bandit#1")
+	bandit.state = "fill"
+	sim._apply_effects(wen, bandit, always.call("seal"))
+	_check(bandit.state == "stun" and bandit.timer == 90, "點穴：對行動條在跑的人有效，3 秒", "%s %d" % [bandit.state, bandit.timer])
+	var archer := sim.unit("archer#1")
+	archer.state = "charge"
+	archer.timer = 30
+	archer.pending = {"move": "archer_volley", "target": "huo"}
+	sim._apply_effects(wen, archer, always.call("seal"))
+	_check(archer.state == "charge", "點穴：對蓄招中的人無效")
+	boss.state = "fill"
+	sim._apply_effects(wen, boss, always.call("seal"))
+	_check(boss.state == "stun" and boss.timer == 45, "點穴：首領的持續時間減半", "%s %d" % [boss.state, boss.timer])
+
+	# 狀態到時間會消失
+	var s2 := _new_battle("test_a")
+	var y := s2.unit("yanhui")
+	s2._apply_effects(y, y, always.call("empower"))
+	for i in 12 * 30 - 1:
+		s2._tick_statuses(y)
+	var still := y.has_status("empower")
+	s2._tick_statuses(y)
+	_check(still and not y.has_status("empower"), "運功持續 12 秒後消失")
+
+
+## 守勢、調息、出招扣內力、蓄招與收招。
+func _test_battle_commands() -> void:
+	var sim := _new_battle("test_a", 1, true)
+	var y := sim.unit("yanhui")
+	y.posture = 50
+	sim._act(y, {"type": "guard"})
+	_check(y.guarding and is_equal_approx(y.posture, 50 + 114 * 0.3) and is_equal_approx(y.gauge, 30), "守勢：回 30% 架勢，行動條從 30 開始")
+	y.mp = 100
+	sim._act(y, {"type": "rest"})
+	_check(not y.guarding and is_equal_approx(y.mp, 100 + 194 * 0.25) and y.gauge == 0.0, "調息：回 25% 內力，守勢解除，行動條從 0 開始")
+	y.mp = 194
+	sim._act(y, {"type": "move", "move": "yanhui_guiyi", "target": "bandit#1"})
+	_check(y.state == "charge" and y.timer == 75 and is_equal_approx(y.mp, 194 - 45), "蓄招：先扣內力，蓄 2.5 秒", "%s %d %.0f" % [y.state, y.timer, y.mp])
+	y.timer = 1
+	sim._events = []
+	sim.step()
+	_check(y.state == "recover" and y.timer == 30 and y.gauge == 0.0, "出招後收招 1 秒，行動條從 0 開始", "%s %d" % [y.state, y.timer])
+	var shen := sim.unit("shen")
+	shen.mp = 10
+	_check(not sim.is_valid(shen, {"type": "move", "move": "shen_feihua", "target": "bandit#1"}), "內力不夠的招式不能用")
+	_check(not sim.is_valid(shen, {"type": "move", "move": "shen_dianxing", "target": "yanhui"}), "攻擊招式不能打自己人")
+	_check(sim.is_valid(sim.unit("wen"), {"type": "move", "move": "wen_huxin", "target": "huo"}), "護體可以給隊友")
+	_check(not sim.is_valid(shen, {"type": "move", "move": "huo_hengzhan", "target": "bandit#1"}), "不能用別人的招式")
+
+
+## 等待模式：我方手動角色的行動條滿了，時間停下來等指令。
+func _test_battle_waits_for_player() -> void:
+	var sim := _new_battle("test_a", 5, true)
+	var guard := 0
+	while sim.waiting().is_empty() and guard < 3000:
+		sim.step()
+		guard += 1
+	var who := sim.waiting()[0] if not sim.waiting().is_empty() else ""
+	_check(who == "shen", "身法最高的沈清禾最先輪到", who)
+	var tick := sim.tick
+	var empty := sim.step()
+	_check(empty.is_empty() and sim.tick == tick, "等玩家下指令時時間不前進")
+	_check(not sim.needs_target("shen_feihua") and sim.needs_target("wen_huxin") and not sim.needs_target("yanhui_ningqi"), "全體與自身的招式不用選目標")
+	var events: Variant = sim.command("yanhui", {"type": "guard"})
+	_check(events == null, "沒輪到的人不能下指令")
+	events = sim.command(who, {"type": "move", "move": "shen_dianxing", "target": "bandit#1"})
+	_check(events != null and (events as Array).any(func(e: Dictionary) -> bool: return e["type"] == "act"), "輪到的人下指令後立刻出招")
+	sim.step()
+	_check(sim.tick == tick + 1 or not sim.waiting().is_empty(), "下完指令時間繼續走")
+	# 手動打完一整場：每次都用普攻打第一個敵人
+	var full := _new_battle("test_a", 9, true)
+	var steps := 0
+	while not full.finished and steps < 100000:
+		for id in full.waiting():
+			var foes := full.foes_of(full.unit(id))
+			var basic: String = full.unit(id).moves[0]
+			full.command(id, {"type": "move", "move": basic, "target": foes[0].id})
+		full.step()
+		steps += 1
+	_check(full.finished and full.result == "win", "全手動也能打完試煉甲", "%s %s" % [full.result, full.seconds()])
+
+
+## 自動出招：敵人的條件規則、我方的兩種戰術。
+func _test_battle_ai() -> void:
+	var BattleAI := preload("res://core/battle/battle_ai.gd")
+	var sim := _new_battle("test_d")
+	var wen := sim.unit("wen")
+	var huo := sim.unit("huo")
+	huo.hp = 200
+	var choice := BattleAI.decide(sim, wen)
+	_check(choice.get("move") == "wen_huichun" and choice.get("target") == "huo", "支援優先：隊友氣血低於一半時先治療", str(choice))
+	huo.hp = huo.hp_max
+	var boss := sim.unit("third_chief#1")
+	boss.state = "charge"
+	boss.pending = {"move": "third_fuhai", "target": "huo"}
+	choice = BattleAI.decide(sim, wen)
+	_check(choice.get("move") == "wen_huxin", "支援優先：敵人蓄大招時先給隊友上護體", str(choice))
+	boss.state = "fill"
+	boss.pending = {}
+	var archer := sim.unit("archer#1")
+	archer.state = "stagger"
+	archer.timer = 150
+	choice = BattleAI.decide(sim, huo)
+	_check(choice.get("target") == archer.id, "全力進攻：先打破綻中的敵人", str(choice))
+	_check(choice.get("move") == "huo_duanyue", "全力進攻：用預估傷害最高的招式", str(choice))
+	var y := sim.unit("yanhui")
+	y.mp = 0
+	choice = BattleAI.decide(sim, y)
+	_check(choice.get("move") == "yanhui_zhici", "內力不夠時只用不耗內力的招式", str(choice))
+
+	# 敵人的條件規則：我方有人蓄招時，三當家有一半機會對他用震脈掌
+	var hits := 0
+	var to_charger := 0
+	for i in 200:
+		var s := _new_battle("test_d", i)
+		s.unit("yanhui").state = "charge"
+		s.unit("yanhui").pending = {"move": "yanhui_guiyi", "target": "third_chief#1"}
+		var c := BattleAI.decide(s, s.unit("third_chief#1"))
+		if c.get("move") == "third_zhenmai":
+			hits += 1
+			if c.get("target") == "yanhui":
+				to_charger += 1
+	_check(hits > 100 and hits < 160 and to_charger > 85, "條件規則：我方蓄招時三當家約一半機會用震脈掌打蓄招的人", "%d/%d" % [to_charger, hits])
+	var weights: Dictionary = {}
+	for i in 400:
+		var s := _new_battle("test_a", i)
+		var c := BattleAI.decide(s, s.unit("bandit#1"))
+		weights[c["move"]] = int(weights.get(c["move"], 0)) + 1
+	var ratio := float(weights.get("bandit_hack", 0)) / 400.0
+	_check(ratio > 0.68 and ratio < 0.82, "權重表：嘍囉亂砍 3、猛劈 1，大約七成五用亂砍", "%.2f" % ratio)
+
+
+## 同一個種子重跑結果完全相同（12.3、13.5）。
+func _test_battle_is_repeatable() -> void:
+	var logs: Array[String] = []
+	for run in 3:
+		var sim := _new_battle("test_d", 7 if run < 2 else 8)
+		var log := PackedStringArray()
+		while not sim.finished:
+			for e in sim.step():
+				log.append(JSON.stringify(e))
+		logs.append("\n".join(log))
+	_check(logs[0] == logs[1] and logs[0].length() > 1000, "同一個種子跑兩次，每一拍的事件完全相同")
+	_check(logs[0] != logs[2], "換一個種子，經過不同")
+
+
+## 四場測試遭遇用自動戰術都能分出勝負（13.5）。
+func _test_battle_encounters_finish() -> void:
+	var results: Array[String] = []
+	var ok := true
+	for enc: String in ["test_a", "test_b", "test_c", "test_d"]:
+		var sim := _new_battle(enc, 3)
+		while not sim.finished:
+			sim.step()
+		results.append("%s %s %.0f 秒" % [enc, sim.result, sim.seconds()])
+		ok = ok and sim.result in ["win", "lose"]
+	_check(ok, "四場測試遭遇都能打到分出勝負", "；".join(results))
+
+
+## 驗證器抓得到戰鬥資料寫錯的地方。
+func _test_battle_validator() -> void:
+	var checker := GameData.new()
+	checker.load_all()
+	checker.moves["huo_bengshan"]["charge"] = -1
+	checker.moves["shen_duanliu"]["tags"] = ["cut"]
+	checker.enemies["bandit"]["moves"][0]["move"] = "no_such_move"
+	checker.encounters["test_a"]["enemies"].append("ghost")
+	checker.errors.clear()
+	checker._validate()
+	_check(checker.errors.size() == 4, "抓得到寫錯的蓄招時間、標籤、敵人招式、遭遇裡的敵人", "；".join(checker.errors))
 
 
 func _check(condition: bool, name: String, detail: String = "") -> void:

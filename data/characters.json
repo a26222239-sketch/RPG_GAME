@@ -39,5 +39,37 @@
     "hp_max": 68000,
     "mp_max": 9000,
     "moves": ["tianmo_palm", "tianmo_sleeve", "tianmo_repel", "tianmo_fushi", "tianmo_guixu"]
+  },
+  "yanhui": {
+    "name": "CHAR_YANHUI",
+    "side": "party",
+    "color": "#4f7fd6",
+    "attrs": { "jingu": 18, "neixi": 18, "shenfa": 18, "wuxing": 25 },
+    "inner_art": "guiyuan",
+    "moves": ["yanhui_zhici", "yanhui_huifeng", "yanhui_ningqi", "yanhui_guiyi"]
+  },
+  "shen": {
+    "name": "CHAR_SHEN",
+    "side": "party",
+    "color": "#5fb8c9",
+    "attrs": { "jingu": 14, "neixi": 14, "shenfa": 26, "wuxing": 16 },
+    "inner_art": "chaoyang",
+    "moves": ["shen_dianxing", "shen_duanliu", "shen_feihua", "shen_qingshen"]
+  },
+  "huo": {
+    "name": "CHAR_HUO",
+    "side": "party",
+    "color": "#c98a4b",
+    "attrs": { "jingu": 26, "neixi": 12, "shenfa": 12, "wuxing": 10 },
+    "inner_art": "nutao",
+    "moves": ["huo_hengzhan", "huo_bengshan", "huo_xueren", "huo_duanyue"]
+  },
+  "wen": {
+    "name": "CHAR_WEN",
+    "side": "party",
+    "color": "#7dbb7a",
+    "attrs": { "jingu": 12, "neixi": 24, "shenfa": 14, "wuxing": 20 },
+    "inner_art": "huichun",
+    "moves": ["wen_dianmai", "wen_huichun", "wen_huxin", "wen_fengxue"]
   }
 }
