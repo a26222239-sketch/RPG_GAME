@@ -25,7 +25,6 @@ var _move_buttons: Array[Button] = []
 var _move_ids: Array[String] = []
 var _command_buttons: Dictionary = {}
 var _owner_label: Label
-var _pulse_tween: Tween
 var _enabled_button: Button
 
 
@@ -146,22 +145,17 @@ func _set_force_tag(button: Button, force: String, enabled: bool) -> void:
 	tag.modulate = Color.WHITE if enabled else Color(1, 1, 1, 0.45)
 
 
+## 現在該按的那一個按鈕換成「可按」的圖（GPT 畫的，邊框亮起來）。不再用閃爍。
 func _start_pulse() -> void:
-	if _enabled_button == null:
-		return
-	_pulse_tween = create_tween().set_loops()
-	_pulse_tween.tween_property(_enabled_button, "modulate", Color(1.45, 1.38, 1.1), 0.45)
-	_pulse_tween.tween_property(_enabled_button, "modulate", Color.WHITE, 0.45)
+	if _enabled_button:
+		UiKit.set_button_active(_enabled_button, true)
 
 
 func _stop_pulse() -> void:
-	if _pulse_tween:
-		_pulse_tween.kill()
-		_pulse_tween = null
 	for button in _move_buttons:
-		button.modulate = Color.WHITE
+		UiKit.set_button_active(button, false)
 	for command: String in _command_buttons:
-		(_command_buttons[command] as Button).modulate = Color.WHITE
+		UiKit.set_button_active(_command_buttons[command], false)
 
 
 func _build() -> void:

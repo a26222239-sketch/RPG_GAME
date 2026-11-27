@@ -22,7 +22,7 @@ const ENEMY := Color("#EC8174")
 const HP := Color("#C65E50")
 
 # 指南還沒有定的顏色，先由程式暫定
-const MP := Color("#5F93B8")
+const MP := Color("#7BB9B0")  # 霧玉青：內力（GPT 在批次 1 定的）
 const GAUGE := Color("#D9B872")
 const TEXT := PAPER
 const TEXT_DIM := Color("#8FA3A0")
@@ -33,8 +33,15 @@ const SHADE := Color(0.035, 0.07, 0.085)
 
 const PANEL_TEXTURE := preload("res://assets/ui/panel.png")
 const BUTTON_TEXTURE := preload("res://assets/ui/button.png")
+const BUTTON_ACTIVE_TEXTURE := preload("res://assets/ui/button_active.png")
+const BUTTON_PRESSED_TEXTURE := preload("res://assets/ui/button_pressed.png")
+const BUTTON_DISABLED_TEXTURE := preload("res://assets/ui/button_disabled.png")
 const HP_TRACK_TEXTURE := preload("res://assets/ui/hp_track.png")
 const HP_FILL_TEXTURE := preload("res://assets/ui/hp_fill.png")
+const MP_TRACK_TEXTURE := preload("res://assets/ui/mp_track.png")
+const MP_FILL_TEXTURE := preload("res://assets/ui/mp_fill.png")
+const GAUGE_TRACK_TEXTURE := preload("res://assets/ui/gauge_track.png")
+const GAUGE_FILL_TEXTURE := preload("res://assets/ui/gauge_fill.png")
 
 const PANEL_SLICE := 48
 const BUTTON_SLICE := 28
@@ -52,11 +59,10 @@ static func panel_style(pad_x: float = 28.0, pad_y: float = 20.0) -> StyleBoxTex
 	return style
 
 
-static func button_style(tint: Color = Color.WHITE) -> StyleBoxTexture:
+static func button_style(texture: Texture2D = BUTTON_TEXTURE) -> StyleBoxTexture:
 	var style := StyleBoxTexture.new()
-	style.texture = BUTTON_TEXTURE
+	style.texture = texture
 	style.set_texture_margin_all(BUTTON_SLICE)
-	style.modulate_color = tint
 	# 內容邊距要另外設小一點；不設的話會沿用九宮格的邊（28），按鈕就不能做得比 108 矮
 	style.content_margin_left = 16
 	style.content_margin_right = 16
@@ -65,19 +71,33 @@ static func button_style(tint: Color = Color.WHITE) -> StyleBoxTexture:
 	return style
 
 
-## 把按鈕換成樣張的外觀。目前只有「一般」一張圖，其他狀態先用明暗變化代替。
+## 把按鈕換成正式的外觀。四張圖都是 GPT 畫的（批次 0 的一般狀態、批次 1 的另外三種），
+## 程式不再另外調亮調暗。滑鼠移上去用「可按」那一張。
+## 「可按」的那一張也用來標出現在該按的按鈕（set_button_active），所以存在按鈕的 meta 裡。
 static func style_button(button: Button, font_size: int) -> void:
 	button.focus_mode = Control.FOCUS_NONE
 	button.add_theme_font_size_override("font_size", font_size)
-	button.add_theme_stylebox_override("normal", button_style())
-	button.add_theme_stylebox_override("hover", button_style(Color(1.18, 1.18, 1.14)))
-	button.add_theme_stylebox_override("pressed", button_style(Color(0.8, 0.8, 0.78)))
-	button.add_theme_stylebox_override("disabled", button_style(Color(0.5, 0.52, 0.55, 0.92)))
+	var normal := button_style()
+	var active := button_style(BUTTON_ACTIVE_TEXTURE)
+	button.set_meta("style_normal", normal)
+	button.set_meta("style_active", active)
+	button.add_theme_stylebox_override("normal", normal)
+	button.add_theme_stylebox_override("hover", active)
+	button.add_theme_stylebox_override("pressed", button_style(BUTTON_PRESSED_TEXTURE))
+	button.add_theme_stylebox_override("disabled", button_style(BUTTON_DISABLED_TEXTURE))
 	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
 	button.add_theme_color_override("font_color", TEXT)
 	button.add_theme_color_override("font_hover_color", TEXT)
 	button.add_theme_color_override("font_pressed_color", HIGHLIGHT)
 	button.add_theme_color_override("font_disabled_color", TEXT_DIM)
+
+
+## 標出現在該按的那一個按鈕：平常的樣子也換成「可按」那一張。
+static func set_button_active(button: Button, on: bool) -> void:
+	if not button.has_meta("style_normal"):
+		return
+	button.add_theme_stylebox_override("normal", button.get_meta("style_active" if on else "style_normal"))
+	button.add_theme_color_override("font_color", HIGHLIGHT if on else TEXT)
 
 
 ## 一般文字。outline 大於 0 時加深色描邊，直接疊在場景上的字要用。

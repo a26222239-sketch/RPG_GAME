@@ -28,7 +28,7 @@ const JsonLoader := preload("res://core/data/json_loader.gd")
 const FRAME_NORMAL := 512.0
 const FRAME_BOSS := 768.0
 const FEET_MARGIN := 32.0
-const GAUGE_SIZE := Vector2(132, 10)
+const GAUGE_SIZE := Vector2(132, 12)
 const CHARGE_W := 250.0
 
 ## 暫用動作（沒有圖的時候）各動畫的大致長度（秒）與出手點（比例）。
@@ -631,7 +631,7 @@ func _build(display_name: String, frame: float) -> void:
 
 	# 行動條：只有在跑的時候才出現
 	_gauge = Bar.new()
-	_gauge.setup_flat(GAUGE_SIZE, UiKit.GAUGE)
+	_gauge.setup_textured(GAUGE_SIZE, UiKit.GAUGE_TRACK_TEXTURE, UiKit.GAUGE_FILL_TEXTURE)
 	_gauge.set_ratio(0.0, false)
 	_gauge.visible = false
 	overlay.add_child(_gauge)
@@ -655,7 +655,7 @@ func _build(display_name: String, frame: float) -> void:
 	_charge_label.custom_minimum_size = Vector2(CHARGE_W, 0)
 	charge_rows.add_child(_charge_label)
 	_charge_bar = Bar.new()
-	_charge_bar.setup_flat(Vector2(CHARGE_W, 10), UiKit.FORCE_COLOR["gang"])
+	_charge_bar.setup_textured(Vector2(CHARGE_W, 12), UiKit.GAUGE_TRACK_TEXTURE, UiKit.GAUGE_FILL_TEXTURE)
 	charge_rows.add_child(_charge_bar)
 
 	# 頭上的箭頭：輪到自己，或可以被選為目標

@@ -1,7 +1,7 @@
 extends Control
 ## 橫條：底槽加上會伸縮的填充。
-## 氣血用樣張的貼圖（底槽與填充各一張，左右兩端是尖角，中段可以拉長）；
-## 內力、行動、蓄招還沒有貼圖，先用純色。
+## 氣血、內力、行動與蓄招都用 GPT 畫的貼圖：底槽與填充各一張，同尺寸、左上對齊，
+## 左右兩端是不拉伸的端頭，中段可以拉長；填充離底槽兩端各留一段空白。
 
 const UiKit := preload("res://scenes/ui/ui_kit.gd")
 
@@ -15,13 +15,13 @@ var _ratio: float = 1.0
 var _tween: Tween
 
 
-## 氣血條。高度不是 36 時，貼圖會上下等比例壓扁。
-func setup_textured(bar_size: Vector2) -> void:
+## 貼圖的條。預設是氣血；內力與行動條傳入各自的底槽與填充。高度和圖不同時，貼圖會上下壓扁或拉高。
+func setup_textured(bar_size: Vector2, track: Texture2D = UiKit.HP_TRACK_TEXTURE, fill: Texture2D = UiKit.HP_FILL_TEXTURE) -> void:
 	_begin(bar_size)
 	_inset = FILL_INSET
-	add_child(_patch(UiKit.HP_TRACK_TEXTURE, bar_size))
+	add_child(_patch(track, bar_size))
 	_clip = _make_clip(bar_size)
-	_clip.add_child(_patch(UiKit.HP_FILL_TEXTURE, bar_size))
+	_clip.add_child(_patch(fill, bar_size))
 	set_ratio(1.0, false)
 
 

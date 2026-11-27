@@ -12,7 +12,7 @@ const HEAD_SIZE := 50.0
 const NAME_W := 116.0
 const BAR_W := 250.0
 const HP_BAR_H := 27.0
-const MP_BAR_H := 9.0
+const MP_BAR_H := 12.0
 const NUMBER_W := 104.0
 ## 氣血低於這個比例時，數字改用警示色。
 const LOW_HP := 0.35
@@ -123,8 +123,8 @@ func _build_row(m: Dictionary) -> Dictionary:
 	hp.position = Vector2(x, 7)
 	row.add_child(hp)
 	var mp := Bar.new()
-	mp.setup_flat(Vector2(BAR_W - 20.0, MP_BAR_H), UiKit.MP)
-	mp.position = Vector2(x + 10.0, 7.0 + HP_BAR_H + 5.0)
+	mp.setup_textured(Vector2(BAR_W - 4.0, MP_BAR_H), UiKit.MP_TRACK_TEXTURE, UiKit.MP_FILL_TEXTURE)
+	mp.position = Vector2(x + 2.0, 7.0 + HP_BAR_H + 4.0)
 	row.add_child(mp)
 
 	var hp_text := UiKit.label(str(int(m["hp_max"])), 36)
