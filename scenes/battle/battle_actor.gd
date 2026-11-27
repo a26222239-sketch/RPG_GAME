@@ -40,20 +40,23 @@ const ANIM_INFO := {
 	"attack_heavy": {"length": 0.8, "impact": 0.6},
 	"cast": {"length": 0.7, "impact": 0.6},
 	"hit": {"length": 0.3, "impact": 0.0},
+	"hit_heavy": {"length": 0.55, "impact": 0.0},
 	"guard": {"length": 0.3, "impact": 0.0},
 	"stagger": {"length": 0.5, "impact": 0.0},
 	"down": {"length": 0.7, "impact": 0.0},
 	"victory": {"length": 1.0, "impact": 0.0},
 	"walk": {"length": 0.8, "impact": 0.0},
 }
-## 美術交的圖，各動作預設播多久（秒，設計文件 15.5 的建議長度）。美術沒有在 meta.json 寫速度時，
-## 格子平均排進這段時間，所以畫幾格都可以。招式專屬的動作沒列在這裡，用 SPECIAL_LENGTH。
+## 美術交的圖，各動作預設播多久（秒）。美術沒有在 meta.json 寫速度時，格子平均排進這段時間。
+## 數字和 tools/anim_spec.json 的 default 相同（測試會比對）。
+## 招式專屬的動作（檔名是招式識別碼）照招式的分級，用 CLASS_LENGTH。
 const STRIP_LENGTH := {
-	"idle": 1.2, "ready": 0.8, "charge": 1.0, "attack_light": 0.5, "attack_heavy": 0.9, "cast": 0.7,
-	"hit": 0.3, "guard": 0.4, "stagger": 1.0, "down": 0.8, "victory": 1.2, "walk": 0.8,
+	"idle": 1.4, "ready": 0.9, "charge": 1.4, "attack_light": 0.8, "attack_heavy": 1.1, "cast": 1.1,
+	"hit": 0.45, "hit_heavy": 0.9, "guard": 1.0, "stagger": 1.0, "down": 2.0, "victory": 1.3, "walk": 0.9,
 }
-const SPECIAL_LENGTH := 0.9
-## 循環播放的動作，以及播完停在最後一格的動作。其餘的播完回到平常的姿勢。
+const CLASS_LENGTH := {"basic": 0.8, "skill": 1.1, "ultimate": 1.8}
+## 循環播放的動作，以及播完停在最後一格的動作（meta.json 寫了 loop_from 的話改成從那一格起循環）。
+## 其餘的播完回到平常的姿勢。
 const LOOP_ANIMS := ["idle", "ready", "charge", "stagger", "walk"]
 const HOLD_ANIMS := ["guard", "down"]
 
@@ -302,13 +305,16 @@ func play_anim(anim: String) -> float:
 	_current_loop = anim if LOOP_ANIMS.has(anim) or HOLD_ANIMS.has(anim) else ""
 	_busy = _current_loop == ""
 	var strip := _strip_for(anim)
+	# 重的受擊還沒有圖、輕的有：播輕的那一組，退得遠一點
+	if strip.is_empty() and anim == "hit_heavy":
+		strip = _strip_for("hit")
 	if strip.is_empty():
 		_show_still()
 		_play_placeholder(anim)
 	else:
 		_show_strip(strip)
 		_play_drawn(anim)
-	return anim_length(anim)
+	return float(strip["length"]) if not strip.is_empty() else anim_length(anim)
 
 
 ## 美術交了圖的動作：畫面照圖播，這裡只加不需要圖的演出。
@@ -318,13 +324,21 @@ func _play_drawn(anim: String) -> void:
 		"charge":
 			_pulse_charge()
 		"hit":
-			_visual.modulate = Color(2.0, 1.3, 1.25)
-			_anim_tween = create_tween()
-			_anim_tween.tween_property(_visual, "position:x", -26.0 * d, 0.08)
-			_anim_tween.tween_property(_visual, "position:x", 0.0, 0.2)
-			_anim_tween.parallel().tween_property(_visual, "modulate", Color.WHITE, 0.2)
+			_knockback(26.0, 0.08, 0.2)
+		"hit_heavy":
+			_knockback(72.0, 0.1, 0.55)
 		"guard":
 			_tint_guard()
+
+
+## 受擊：整個人閃一下，往後退再回到原位（位移由程式做，圖裡只畫原地的動作）。
+func _knockback(distance: float, out_time: float, back_time: float) -> void:
+	var d := facing()
+	_visual.modulate = Color(2.0, 1.3, 1.25)
+	_anim_tween = create_tween()
+	_anim_tween.tween_property(_visual, "position:x", -distance * d, out_time).set_ease(Tween.EASE_OUT)
+	_anim_tween.tween_property(_visual, "position:x", 0.0, back_time).set_trans(Tween.TRANS_SINE)
+	_anim_tween.parallel().tween_property(_visual, "modulate", Color.WHITE, minf(0.2, back_time))
 
 
 ## 還沒有圖的動作：拿站姿圖用位移、傾斜、明暗頂替。
@@ -369,13 +383,14 @@ func _play_placeholder(anim: String) -> void:
 			_anim_tween.tween_property(_visual, "scale", Vector2(1.0, 1.0), 0.3)
 			_anim_tween.parallel().tween_property(_visual, "modulate", Color.WHITE, 0.3)
 			_anim_tween.tween_callback(_back_to_rest)
-		"hit":
+		"hit", "hit_heavy":
+			var heavy := anim == "hit_heavy"
 			_visual.modulate = Color(2.0, 1.3, 1.25)
 			_anim_tween = create_tween()
-			_anim_tween.tween_property(_visual, "position:x", -26.0 * d, 0.08)
-			_anim_tween.parallel().tween_property(_visual, "rotation", -0.05 * d, 0.08)
-			_anim_tween.tween_property(_visual, "position:x", 0.0, 0.2)
-			_anim_tween.parallel().tween_property(_visual, "rotation", 0.0, 0.2)
+			_anim_tween.tween_property(_visual, "position:x", (-72.0 if heavy else -26.0) * d, 0.1 if heavy else 0.08).set_ease(Tween.EASE_OUT)
+			_anim_tween.parallel().tween_property(_visual, "rotation", (-0.1 if heavy else -0.05) * d, 0.1 if heavy else 0.08)
+			_anim_tween.tween_property(_visual, "position:x", 0.0, 0.42 if heavy else 0.2).set_trans(Tween.TRANS_SINE)
+			_anim_tween.parallel().tween_property(_visual, "rotation", 0.0, 0.42 if heavy else 0.2)
 			_anim_tween.parallel().tween_property(_visual, "modulate", Color.WHITE, 0.2)
 			_anim_tween.tween_callback(_back_to_rest)
 		"guard":
@@ -447,11 +462,23 @@ func _load_strip(anim: String) -> Dictionary:
 		return {}
 	var info: Dictionary = ANIM_INFO.get(anim, {"impact": 0.6})
 	var written: Variant = _strip_meta.get(anim)
-	var strip := FrameStrip.timing(frames.size(), float(STRIP_LENGTH.get(anim, SPECIAL_LENGTH)), float(info["impact"]),
+	var strip := FrameStrip.timing(frames.size(), _default_length(anim), float(info["impact"]),
 		written if written is Dictionary else {}, int(_strip_meta.get("frame_index_base", 1)))
 	strip["frames"] = frames
-	strip["mode"] = FrameStrip.LOOP if LOOP_ANIMS.has(anim) else (FrameStrip.HOLD if HOLD_ANIMS.has(anim) else FrameStrip.ONCE)
+	if LOOP_ANIMS.has(anim) or (HOLD_ANIMS.has(anim) and strip["has_loop_from"]):
+		strip["mode"] = FrameStrip.LOOP
+	else:
+		strip["mode"] = FrameStrip.HOLD if HOLD_ANIMS.has(anim) else FrameStrip.ONCE
 	return strip
+
+
+## 沒有寫速度時，這個動作預設播多久。
+func _default_length(anim: String) -> float:
+	if STRIP_LENGTH.has(anim):
+		return float(STRIP_LENGTH[anim])
+	var move: Variant = Game.data.moves.get(anim)
+	var move_class := str((move as Dictionary).get("class", "ultimate")) if move is Dictionary else "ultimate"
+	return float(CLASS_LENGTH.get(move_class, CLASS_LENGTH["ultimate"]))
 
 
 func _show_strip(strip: Dictionary) -> void:
@@ -481,7 +508,7 @@ func _process(delta: float) -> void:
 		_back_to_rest()
 		return
 	var frames: Array = _strip["frames"]
-	_strip_sprite.texture = frames[FrameStrip.frame_at(_strip_time, _strip["ends"], mode)]
+	_strip_sprite.texture = frames[FrameStrip.frame_at(_strip_time, _strip["ends"], mode, int(_strip["loop_start"]))]
 
 
 func _stop_tweens() -> void:

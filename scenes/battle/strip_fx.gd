@@ -122,7 +122,7 @@ func _process(delta: float) -> void:
 		queue_free()
 		return
 	var frames: Array = _info["frames"]
-	texture = frames[FrameStrip.frame_at(_time, _info["ends"], FrameStrip.LOOP if looping else FrameStrip.HOLD)]
+	texture = frames[FrameStrip.frame_at(_time, _info["ends"], FrameStrip.LOOP if looping else FrameStrip.HOLD, int(_info["loop_start"]))]
 
 
 static func _additive() -> CanvasItemMaterial:

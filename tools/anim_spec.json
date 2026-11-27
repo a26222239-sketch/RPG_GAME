@@ -1,0 +1,57 @@
+{
+  "_說明": "角色動作、特效、大招特寫的張數與時間規格。docs/animation_spec.md 的表、tools/check_frames.py 的允收檢查、tools/art_needs.py 的需求清單都讀這一份。改數字只改這裡。張數指「不同的圖」的張數，重複使用同一張不算。",
+
+  "frame_ms": { "ones": 42, "twos": 83, "max": 125 },
+
+  "continuity": {
+    "_說明": "相鄰兩張的人形輪廓變化（1 − 重疊比例）。一般不超過 normal；標成拖影（smear_frames）的那幾張可以到 smear，每個動作最多 smear_pairs 對。",
+    "normal": 0.25,
+    "smear": 0.4,
+    "smear_pairs": 3,
+    "return": 0.1
+  },
+
+  "feet_tolerance": 3,
+  "height_tolerance": 0.02,
+  "edge_margin": 2,
+
+  "actions": {
+    "idle":         { "title": "待機",       "min": 12, "rec": 16, "length": [1.2, 1.8], "default": 1.4, "loop": true },
+    "ready":        { "title": "準備出手",   "min": 8,  "rec": 10, "length": [0.8, 1.2], "default": 0.9, "loop": true },
+    "charge":       { "title": "蓄招",       "min": 12, "rec": 14, "length": [0.8, 1.6], "default": 1.4, "loop": true, "entry": 4 },
+    "attack_light": { "title": "普攻",       "min": 14, "rec": 16, "length": [0.6, 1.0], "default": 0.8, "class": "basic", "before": 4, "after": 6, "starts_idle": true, "ends_idle": true },
+    "attack_heavy": { "title": "小招（兵器）", "min": 20, "rec": 24, "length": [0.9, 1.4], "default": 1.1, "class": "skill", "before": 6, "after": 10, "starts_idle": true, "ends_idle": true },
+    "cast":         { "title": "小招（施法）", "min": 20, "rec": 24, "length": [0.9, 1.4], "default": 1.1, "class": "skill", "before": 6, "after": 10, "starts_idle": true, "ends_idle": true },
+    "ultimate":     { "title": "大招",       "min": 32, "rec": 40, "length": [1.4, 2.2], "default": 1.8, "class": "ultimate", "before": 10, "after": 14, "starts_idle": true, "ends_idle": true },
+    "hit":          { "title": "受擊（輕）", "min": 8,  "rec": 10, "length": [0.35, 0.55], "default": 0.45, "impact_first": true, "ends_idle": true },
+    "hit_heavy":    { "title": "受擊（重）", "min": 14, "rec": 18, "length": [0.7, 1.1], "default": 0.9, "impact_first": true, "ends_idle": true },
+    "guard":        { "title": "守勢",       "min": 10, "rec": 12, "length": [0.6, 1.2], "default": 1.0, "loop": true, "entry": 4 },
+    "stagger":      { "title": "破綻",       "min": 10, "rec": 12, "length": [0.9, 1.3], "default": 1.0, "loop": true },
+    "down":         { "title": "倒下",       "min": 16, "rec": 20, "length": [0.6, 1.6], "default": 2.0, "loop": true, "entry": 10 },
+    "victory":      { "title": "勝利",       "min": 12, "rec": 16, "length": [1.0, 1.6], "default": 1.3 },
+    "walk":         { "title": "行走",       "min": 12, "rec": 12, "length": [0.8, 1.0], "default": 0.9, "loop": true }
+  },
+
+  "vfx": {
+    "strike":       { "title": "命中特效（劍光、刀光、掌勁、點穴）", "min": 10, "rec": 12, "length": [0.4, 0.6] },
+    "hit_spark":    { "title": "受擊火花", "min": 6,  "rec": 8,  "length": [0.25, 0.35] },
+    "support":      { "title": "治療、增益、減益", "min": 12, "rec": 16, "length": [0.7, 1.0] },
+    "aura":         { "title": "身上循環的特效（蓄招氣場、守勢、破綻標記）", "min": 10, "rec": 14, "length": [0.8, 1.3], "loop": true },
+    "skill":        { "title": "小招特效（招式專屬）", "min": 16, "rec": 20, "length": [0.6, 1.0] },
+    "ultimate":     { "title": "大招特效", "min": 24, "rec": 30, "length": [1.0, 1.6] },
+    "ultimate_loop": { "title": "大招特效（循環，萬魔歸墟）", "min": 16, "rec": 24, "length": [1.2, 2.0], "loop": true }
+  },
+
+  "vfx_kinds": {
+    "slash_sword": "strike", "slash_blade": "strike", "palm": "strike", "seal": "strike",
+    "hit_spark": "hit_spark",
+    "heal": "support", "buff": "support", "debuff": "support",
+    "charge_aura": "aura", "guard": "aura", "stagger_mark": "aura",
+    "wen_fengxue": "skill",
+    "tianmo_guixu": "ultimate_loop"
+  },
+
+  "vfx_fade": 0.15,
+
+  "cutin": { "title": "大招特寫", "min": 6, "rec": 8, "size": [2560, 720], "length": [0.5, 0.8], "loop": true }
+}

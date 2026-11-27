@@ -7,7 +7,6 @@ signal move_pressed(move_id: String)
 signal command_pressed(command_id: String)
 
 const UiKit := preload("res://scenes/ui/ui_kit.gd")
-const Glyph := preload("res://scenes/ui/glyph.gd")
 
 const MOVE_SLOTS := 6
 const COMMANDS := ["guard", "rest", "item", "flee"]
@@ -133,15 +132,14 @@ func _on_command_button(command: String) -> void:
 	command_pressed.emit(command)
 
 
-## 按鈕右側的勁路標籤：記號加一個字，顏色照風格指南。沒有勁路的招式不顯示。
+## 按鈕右側的勁路標籤：一個字（剛、柔、快），顏色照風格指南。沒有勁路的招式不顯示。
+## 2026-11-27 擁有者決定不用圖示，原本程式畫的記號（方印、雙弧、雙斜筆）也一併拿掉。
 func _set_force_tag(button: Button, force: String, enabled: bool) -> void:
 	var tag := button.get_node("Tag") as Control
 	tag.visible = FORCE_TEXT.has(force)
 	if not tag.visible:
 		return
 	var color: Color = UiKit.FORCE_COLOR[force]
-	(tag.get_node("Glyph") as Glyph).kind = force
-	(tag.get_node("Glyph") as Glyph).color = color
 	var label := tag.get_node("Text") as Label
 	label.text = Game.t(FORCE_TEXT[force])
 	label.add_theme_color_override("font_color", color)
@@ -213,13 +211,11 @@ func _build_force_tag() -> Control:
 	style.bg_color = UiKit.INK
 	style.set_corner_radius_all(4)
 	tag.add_theme_stylebox_override("panel", style)
-	var glyph := Glyph.new("kuai", Color.WHITE, 26.0)
-	glyph.name = "Glyph"
-	glyph.position = Vector2(6, (TAG_SIZE.y - 26.0) / 2.0)
-	tag.add_child(glyph)
 	var text := UiKit.label("", 36)
 	text.name = "Text"
-	text.position = Vector2(34, 0)
-	text.size = Vector2(TAG_SIZE.x - 36.0, TAG_SIZE.y)
+	text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	text.position = Vector2.ZERO
+	text.size = TAG_SIZE
 	tag.add_child(text)
 	return tag

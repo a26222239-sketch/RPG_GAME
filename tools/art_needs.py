@@ -6,10 +6,11 @@
     python3 tools/art_needs.py 劇本識別碼   換一份劇本
 
 清單是從遊戲資料算出來的：劇本裡誰出了什麼招、誰挨打、誰倒下、換了哪些場景。
-所以劇本一改，重跑一次就知道要補畫什麼。
+所以劇本一改，重跑一次就知道要補畫什麼。張數讀 tools/anim_spec.json（docs/animation_spec.md 的規格）。
 
 狀態的意思：
-    有　　　已經在 assets/ 的正式位置
+    有　　　已經在 assets/ 的正式位置，而且通過 tools/check_frames.py 的允收檢查
+    有，未達標　已經在遊戲裡，但沒通過允收檢查，要重交
     待驗收　放在 assets/incoming/ 裡，還沒驗收
     缺　　　還沒有；遊戲目前用程式畫的暫用版本頂替
 
@@ -26,23 +27,15 @@ ROOT = Path(__file__).resolve().parent.parent
 ASSETS = ROOT / "assets"
 DATA = ROOT / "data"
 
+SPEC = json.loads((ROOT / "tools" / "anim_spec.json").read_text(encoding="utf-8"))
 # 動畫契約的順序（設計文件 12.4）
-ANIMS = ["idle", "ready", "charge", "attack_light", "attack_heavy", "cast", "hit", "guard", "stagger", "down", "victory", "walk"]
-ANIM_TEXT = {
-    "idle": "待機", "ready": "準備出手", "charge": "蓄招", "attack_light": "快招", "attack_heavy": "重招", "cast": "施法",
-    "hit": "受擊", "guard": "守勢", "stagger": "破綻", "down": "倒下", "victory": "勝利", "walk": "行走",
-}
+ANIMS = ["idle", "ready", "charge", "attack_light", "attack_heavy", "cast", "hit", "hit_heavy", "guard", "stagger", "down", "victory", "walk"]
 SHARED_FX_TEXT = {
     "slash_sword": "劍光", "slash_blade": "刀光", "palm": "掌勁", "seal": "點穴", "heal": "治療", "buff": "增益", "debuff": "減益",
     "hit_spark": "受擊火花", "charge_aura": "蓄招氣場（循環）", "guard": "守勢", "stagger_mark": "破綻標記",
 }
-# 每個動作建議的格數，以及播完之後循環還是停在最後一格（設計文件 15.5）
-ANIM_FRAMES = {
-    "idle": 6, "ready": 4, "charge": 6, "attack_light": 6, "attack_heavy": 8, "cast": 6,
-    "hit": 3, "guard": 3, "stagger": 4, "down": 6, "victory": 6, "walk": 8,
-}
-ANIM_LOOPING = {"idle", "ready", "charge", "stagger", "walk"}
-ANIM_HOLDING = {"guard", "down"}
+# 招式分級對應的反應：被普攻打中是輕的受擊，被小招、大招打中是重的（遊戲裡的 HIT_REACTION）
+HIT_REACTION = {"basic": "hit", "skill": "hit_heavy", "ultimate": "hit_heavy"}
 # 劇本裡的演出對應到哪一組特效：大殿崩解就是殷九淵的「萬魔歸墟」
 STAGE_FX = {"collapse": "tianmo_guixu"}
 FORCE_TEXT = {"gang": "剛", "rou": "柔", "kuai": "快"}
@@ -66,13 +59,35 @@ def load(path: Path):
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+_checked: dict[str, bool] | None = None
+
+
+def passed_check(relative: str) -> bool:
+    """逐格的圖要再過允收檢查（tools/check_frames.py）。"""
+    global _checked
+    if _checked is None:
+        sys.path.insert(0, str(ROOT / "tools"))
+        import check_frames
+        _checked = {report.subject: report.passed for report in check_frames.collect(ASSETS, None)}
+    parts = relative.rsplit(".", 1)[0].split("/")
+    if parts[0] == "vfx":
+        subject = f"vfx/{parts[1]}"
+    elif parts[0] == "characters" and parts[2] == "frames":
+        subject = f"{parts[1]}/{parts[3]}"
+    elif parts[0] == "characters" and parts[2] == "cutin":
+        subject = f"{parts[1]}/cutin/{parts[3].removesuffix('_01')}"
+    else:
+        return True
+    return _checked.get(subject, True)
+
+
 def status(relative: str) -> str:
     stem = relative.rsplit(".", 1)[0]
     # 逐格圖也可以一格一個檔（名稱_01.png 起），有第一格就算有交
     endings = (".png", ".jpg", "_01.png")
     for ending in endings:
         if (ASSETS / (stem + ending)).exists():
-            return "有"
+            return "有" if passed_check(relative) else "有，未達標"
     incoming = ASSETS / "incoming"
     if incoming.exists():
         for ending in endings:
@@ -109,6 +124,7 @@ def main() -> int:
     units = party + enemies
     anims = {unit: {} for unit in units}  # 角色 → {動畫: [用在哪裡]}
     effects: dict[str, list[str]] = {}
+    cutins: dict[tuple[str, str], list[str]] = {}
     scenes: dict[str, list[str]] = {script["background"]: ["開場"]}
     forces: dict[str, list[str]] = {}
     states: dict[str, list[str]] = {}
@@ -139,13 +155,19 @@ def main() -> int:
             if beat.get("charge", 0) > 0:
                 add(anims[who], "charge", label)
                 add(effects, "charge_aura", label)
-            add(anims[who], move["anim"], label)
+            if move.get("class") == "ultimate":
+                # 大招：自己專屬的動作，出手前播特寫
+                add(anims[who], beat["move"], label)
+                add(cutins, (who, beat["move"]), label)
+            else:
+                add(anims[who], move["anim"], label)
             add(effects, move["fx"], label)
             for target, change in beat.get("result", {}).items():
                 if "hp_to" not in change:
                     continue
                 if change["hp_to"] < hp[target]:
-                    add(anims[target], "down" if change["hp_to"] <= 0 else "hit", f"被{label}打中")
+                    reaction = HIT_REACTION.get(move.get("class", "basic"), "hit")
+                    add(anims[target], "down" if change["hp_to"] <= 0 else reaction, f"被{label}打中")
                     add(effects, "hit_spark", f"{name_of(target)}被{label}打中")
                 hp[target] = change["hp_to"]
         elif kind == "charge":
@@ -172,16 +194,26 @@ def main() -> int:
             add(anims[party[0]], "attack_heavy", "雙掌把同伴震出殿外")
             add(effects, "palm", f"{name_of(party[0])}雙掌把同伴震出殿外")
             for unit in party[1:]:
-                add(anims[unit], "hit", "被震出殿外")
+                add(anims[unit], "hit_heavy", "被震出殿外")
         elif fx == "walk_to_enemy":
             add(anims[party[0]], "walk", "走向對手")
         elif fx in STAGE_FX:
-            add(effects, STAGE_FX[fx], f"{name_of(enemies[0])}發動「{move_name(STAGE_FX[fx])}」，大殿崩解")
+            label = f"{name_of(enemies[0])}發動「{move_name(STAGE_FX[fx])}」，大殿崩解"
+            add(effects, STAGE_FX[fx], label)
+            add(cutins, (enemies[0], STAGE_FX[fx]), label)
 
-    def loop_note(anim: str) -> str:
-        if anim in ANIM_LOOPING:
-            return "，循環"
-        return "，停在最後一格" if anim in ANIM_HOLDING else ""
+    def action_spec(anim: str) -> dict:
+        if anim in SPEC["actions"]:
+            return SPEC["actions"][anim]
+        return SPEC["actions"]["ultimate"]
+
+    def count_text(spec: dict) -> str:
+        text = f"至少 {spec['min']} 張（建議 {spec['rec']}）"
+        if spec.get("entry"):
+            return text + f"，前 {spec['entry']} 張進場、之後循環"
+        return text + ("，循環" if spec.get("loop") else "")
+
+    totals = {"actions": [0, 0], "vfx": [0, 0], "cutin": [0, 0]}
 
     sections: list[tuple[str, list[tuple[str, str, str]]]] = []
 
@@ -189,34 +221,47 @@ def main() -> int:
     sections.append(("背景", rows))
 
     rows = []
-    frame_total = 0
     for unit in units:
         cell = 768 if characters[unit].get("boss") else 512
-        for anim in ANIMS:
-            if anim in anims[unit]:
-                where = "；".join(anims[unit][anim][:3]) + ("…" if len(anims[unit][anim]) > 3 else "")
-                spec = f"{ANIM_FRAMES[anim]} 格，每格 {cell}×{cell}{loop_note(anim)}"
-                rows.append((f"characters/{unit}/frames/{anim}.png", spec, f"{name_of(unit)}・{ANIM_TEXT[anim]}：{where}"))
-                frame_total += ANIM_FRAMES[anim]
-    sections.append((f"角色動作（共 {len(rows)} 條、約 {frame_total} 格）", rows))
+        order = [a for a in ANIMS if a in anims[unit]] + [a for a in anims[unit] if a not in ANIMS]
+        for anim in order:
+            spec = action_spec(anim)
+            where = "；".join(anims[unit][anim][:3]) + ("…" if len(anims[unit][anim]) > 3 else "")
+            title = spec["title"] if anim in SPEC["actions"] else f"大招「{move_name(anim)}」"
+            rows.append((f"characters/{unit}/frames/{anim}.png", f"{count_text(spec)}，每格 {cell}×{cell}", f"{name_of(unit)}・{title}：{where}"))
+            totals["actions"][0] += spec["min"]
+            totals["actions"][1] += spec["rec"]
+    sections.append((f"角色動作（共 {len(rows)} 條，至少 {totals['actions'][0]} 張、建議 {totals['actions'][1]} 張）", rows))
+
+    rows = []
+    for (unit, move_id), reasons in cutins.items():
+        spec = SPEC["cutin"]
+        width, height = spec["size"]
+        rows.append((f"characters/{unit}/cutin/{move_id}_01.png", f"{count_text(spec)}，每張 {width}×{height}，一張一個檔（_01 起）",
+                     f"{name_of(unit)}・大招特寫：{'；'.join(reasons)}"))
+        totals["cutin"][0] += spec["min"]
+        totals["cutin"][1] += spec["rec"]
+    sections.append((f"大招特寫（共 {len(rows)} 組，至少 {totals['cutin'][0]} 張、建議 {totals['cutin'][1]} 張）", rows))
 
     rows = []
     for effect in list(SHARED_FX_TEXT) + sorted(e for e in effects if e not in SHARED_FX_TEXT):
         if effect not in effects:
             continue
         shared = effect in SHARED_FX_TEXT
-        title = SHARED_FX_TEXT[effect] if shared else f"絕招「{move_name(effect)}」"
+        title = SHARED_FX_TEXT[effect] if shared else f"大招「{move_name(effect)}」" if moves.get(effect, {}).get("class") == "ultimate" else f"「{move_name(effect)}」"
         where = "；".join(effects[effect][:3]) + ("…" if len(effects[effect]) > 3 else "")
         setting = vfx[effect]
-        spec = f"{setting['frames']} 格，每格 {setting['frame']}×{setting['frame']}" + ("，循環" if setting.get("loop") else "")
-        rows.append((f"vfx/{effect}.png", spec, f"{title}：{where}"))
-    sections.append(("特效", rows))
+        spec = SPEC["vfx"][SPEC["vfx_kinds"].get(effect, "ultimate")]
+        rows.append((f"vfx/{effect}.png", f"{count_text(spec)}，每格 {setting['frame']}×{setting['frame']}", f"{title}：{where}"))
+        totals["vfx"][0] += spec["min"]
+        totals["vfx"][1] += spec["rec"]
+    sections.append((f"特效（共 {len(rows)} 組，至少 {totals['vfx'][0]} 張、建議 {totals['vfx'][1]} 張）", rows))
 
     # 2026-11-27 owner decision: force/state labels are text only; no UI icons.
     rows = list(UI_FILES)
     sections.append(("介面", rows))
 
-    counts = {"有": 0, "待驗收": 0, "缺": 0}
+    counts = {"有": 0, "有，未達標": 0, "待驗收": 0, "缺": 0}
     for title, rows in sections:
         shown = [(path, spec, where, status(path)) for path, spec, where in rows]
         for row in shown:
@@ -231,7 +276,10 @@ def main() -> int:
         for path, spec, where, state in shown:
             print(f"| `{path}` | {spec} | {where} | {state} |")
         print()
-    print(f"合計：有 {counts['有']}，待驗收 {counts['待驗收']}，缺 {counts['缺']}。")
+    print(f"合計：有 {counts['有']}，有但未達標 {counts['有，未達標']}，待驗收 {counts['待驗收']}，缺 {counts['缺']}。")
+    low = sum(v[0] for v in totals.values())
+    high = sum(v[1] for v in totals.values())
+    print(f"\n逐格的圖（角色動作、特寫、特效）至少 {low} 張，照建議畫是 {high} 張。")
     return 0
 
 

@@ -14,6 +14,7 @@ const LineWrap := preload("res://core/text/line_wrap.gd")
 const BattleActor := preload("res://scenes/battle/battle_actor.gd")
 const BattleFx := preload("res://scenes/battle/battle_fx.gd")
 const StripFx := preload("res://scenes/battle/strip_fx.gd")
+const Cutin := preload("res://scenes/battle/cutin.gd")
 const DialogueBox := preload("res://scenes/ui/dialogue_box.gd")
 const CommandPanel := preload("res://scenes/ui/command_panel.gd")
 const PartyPanel := preload("res://scenes/ui/party_panel.gd")
@@ -57,6 +58,12 @@ const PLACEHOLDER_FX := {
 }
 
 ## 提示的字級，以及文字離面板左右邊的距離。
+## 命中的瞬間整個畫面停一下（頓幀，秒），打擊才有重量。依招式的分級：普攻、小招、大招。
+const HIT_STOP := {"basic": 0.06, "skill": 0.09, "ultimate": 0.14}
+## 敵人挨打的反應：被普攻打中是輕的受擊，被小招、大招打中是重的。
+const HIT_REACTION := {"basic": "hit", "skill": "hit_heavy", "ultimate": "hit_heavy"}
+## 演出前先播哪一招的特寫：萬魔歸墟沒有出手的那一拍，是在「大殿崩解」的演出裡發動的。
+const FX_CUTIN := {"collapse": "tianmo_guixu"}
 const HINT_FONT := 36
 const HINT_PAD := 30.0
 
@@ -96,6 +103,9 @@ var _tint: ColorRect
 var _skip_button: Button
 var _end_card: Control
 var _collapse_tween: Tween
+var _cutin: Cutin
+## 頓幀結束後要回到的時間倍率（開發用的 --speed 會改它）。
+var _time_scale: float = 1.0
 
 signal _subtitle_advanced
 signal _target_chosen(actor_id: String)
@@ -115,10 +125,16 @@ func _ready() -> void:
 		_show_error(problems)
 		return
 	_battle.setup(script, Game.data.characters)
+	_time_scale = Engine.time_scale
 	_build()
 	resized.connect(_layout)
 	_layout()
 	_run()
+
+
+func _exit_tree() -> void:
+	# 頓幀進行到一半就離開這個畫面（跳過、重看）時，把時間倍率還回去
+	Engine.time_scale = _time_scale
 
 
 # ---------------------------------------------------------------- 主流程
@@ -231,6 +247,12 @@ func _beat_line(who: String, beat: Dictionary) -> void:
 	if _aborted:
 		return
 	_command_panel.hide_commands()
+	if FX_CUTIN.has(str(beat.get("fx", ""))):
+		# 這段演出是某人發動大招：先播他的特寫，再出文字
+		var cutin_move: String = FX_CUTIN[str(beat["fx"])]
+		await _play_cutin(_owner_of(cutin_move), cutin_move)
+		if _aborted:
+			return
 	if beat.has("fx"):
 		# 演出與說明文字同時進行
 		_play_fx(str(beat["fx"]), beat)
@@ -298,6 +320,13 @@ func _beat_act(beat: Dictionary) -> void:
 			return
 		actor.hide_charge()
 
+	# 大招：出手前先播特寫
+	var move_class := str(move.get("class", "basic"))
+	if move_class == "ultimate":
+		await _play_cutin(who, move_id)
+		if _aborted:
+			return
+
 	_show_move_call("%s　%s" % [Game.data.character_name(who), move_name])
 	# 出手了：頭上的箭頭與行動條收起來
 	actor.set_active(false)
@@ -337,7 +366,7 @@ func _beat_act(beat: Dictionary) -> void:
 	var changes := _battle.apply(beat)
 	if not fx_drawn:
 		_show_move_fx(actor, move, targets)
-	_show_changes(changes)
+	_show_changes(changes, move_class)
 	_refresh_states()
 	if beat.get("shake", false):
 		_shake(18.0, 0.5)
@@ -345,6 +374,9 @@ func _beat_act(beat: Dictionary) -> void:
 		_flash()
 	if Game.autoplay:
 		Game.take_shot("impact_%s" % move_id)
+	await _hit_stop(float(HIT_STOP.get(move_class, 0.0)))
+	if _aborted:
+		return
 
 	await _wait(maxf(0.1, length - impact) + 0.15)
 	if _aborted:
@@ -610,7 +642,7 @@ func _play_fx(fx: String, beat: Dictionary) -> void:
 			for i in range(1, _battle.party.size()):
 				var actor: BattleActor = _actors[_battle.party[i]]
 				StripFx.spawn(_numbers, "palm", actor.chest_position(), UiKit.FORCE_COLOR["rou"], -hero.facing())
-				actor.play_anim("hit")
+				actor.play_anim("hit_heavy")
 				actor.move_to(Vector2(-400.0, actor.position.y), 0.45)
 			await _wait(0.5)
 		"walk_to_enemy":
@@ -639,7 +671,8 @@ func _reveal_scene() -> void:
 	_white.visible = false
 
 
-func _show_changes(changes: Array[Dictionary]) -> void:
+## move_class 是造成這些變化的招式分級，決定挨打的人做輕的還是重的受擊。
+func _show_changes(changes: Array[Dictionary], move_class: String = "basic") -> void:
 	for change in changes:
 		var unit_id := str(change["unit"])
 		var actor: BattleActor = _actors[unit_id]
@@ -654,10 +687,39 @@ func _show_changes(changes: Array[Dictionary]) -> void:
 		if damage:
 			_spawn_number(actor, "-%d" % int(change["amount"]), UiKit.DAMAGE)
 			StripFx.spawn(_numbers, "hit_spark", actor.chest_position())
-			actor.play_anim("down" if to <= 0.0 else "hit")
+			actor.play_anim("down" if to <= 0.0 else str(HIT_REACTION.get(move_class, "hit")))
 		else:
 			_spawn_number(actor, "+%d" % int(change["amount"]), UiKit.HEAL)
 			actor.play_anim("cast")
+
+
+## 大招特寫。播完才返回。
+func _play_cutin(who: String, move_id: String) -> void:
+	_hide_move_call()
+	var is_party: bool = _battle.units[who]["side"] == "party"
+	_cutin.play(who, move_id, is_party, _force_color(Game.data.moves[move_id]), Game.data.move_name(move_id), Game.data.character_name(who))
+	if Game.autoplay:
+		await _wait(0.55)
+		Game.take_shot("cutin_%s" % move_id)
+	if _cutin.visible:
+		await _cutin.finished
+
+
+## 命中的頓幀：整個畫面幾乎停住一下再繼續。
+func _hit_stop(seconds: float) -> void:
+	if seconds <= 0.0:
+		return
+	Engine.time_scale = _time_scale * 0.02
+	await get_tree().create_timer(seconds / _time_scale, true, false, true).timeout
+	Engine.time_scale = _time_scale
+
+
+## 誰會這一招（第一個招式表裡有它的人）。
+func _owner_of(move_id: String) -> String:
+	for id: String in _battle.units:
+		if (Game.data.characters[id]["moves"] as Array).has(move_id):
+			return id
+	return _battle.enemies[0]
 
 
 func _force_color(move: Dictionary) -> Color:
@@ -891,6 +953,11 @@ func _build() -> void:
 
 	_dialogue = DialogueBox.new()
 	add_child(_dialogue)
+
+	# 大招特寫：蓋在介面上面，黑幕與跳過鈕下面
+	_cutin = Cutin.new()
+	_cutin.visible = false
+	add_child(_cutin)
 
 	# 全畫面的黑幕、白幕與字幕
 	_black = ColorRect.new()

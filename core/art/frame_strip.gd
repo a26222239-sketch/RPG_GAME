@@ -56,9 +56,12 @@ static func single_problem(width: int, height: int, side: int) -> String:
 ##   fps           每秒播幾格（每格一樣久）。沒有 timings_ms 時才看這個。
 ##   impact_time   「打到」的瞬間是開始後第幾秒。
 ##   impact_frame  或者寫第幾格是「打到」的瞬間；程式取那一格開始的時間。
+##   loop_from     循環的動作播完一輪後，從第幾格開始接著循環（前面幾格是進場，只播一次）。
+##                 守勢、倒下這類停在最後一格的動作，寫了這個就改成從那一格起循環，人不會整個定住。
 ## 兩種速度都沒寫的話，把所有格子平均排進 base_length。
 ## index_base 是 impact_frame 從幾算起：1（第一格是 1）或 0（第一格是 0）。
-## 回傳 { length, impact, ends }：length 與 impact 的單位是秒；ends[i] 是第 i 格播完的時間。
+## 回傳 { length, impact, ends, loop_start, has_loop_from }：length 與 impact 的單位是秒；ends[i] 是第 i 格播完的時間；
+## loop_start 是循環從第幾格開始（從 0 算起）。
 static func timing(frames: int, base_length: float, impact_ratio: float, meta: Dictionary, index_base: int = 1) -> Dictionary:
 	var total := maxi(frames, 1)
 	var steps: Array[float] = []
@@ -84,17 +87,24 @@ static func timing(frames: int, base_length: float, impact_ratio: float, meta: D
 	elif meta.get("impact_frame") is float or meta.get("impact_frame") is int:
 		var index := clampi(int(meta["impact_frame"]) - index_base, 0, total - 1)
 		impact = 0.0 if index == 0 else ends[index - 1]
-	return {"length": clock, "impact": impact, "ends": ends}
+	var loop_start := 0
+	var has_loop_from := meta.get("loop_from") is float or meta.get("loop_from") is int
+	if has_loop_from:
+		loop_start = clampi(int(meta["loop_from"]) - index_base, 0, total - 1)
+	return {"length": clock, "impact": impact, "ends": ends, "loop_start": loop_start, "has_loop_from": has_loop_from}
 
 
 ## 播到第幾秒時該顯示第幾格（從 0 算起）。ends 是 timing() 回傳的每格結束時間。
-static func frame_at(time: float, ends: Array, mode: String) -> int:
+## 循環時，第一輪從頭播，之後從 loop_start 那一格開始接著循環。
+static func frame_at(time: float, ends: Array, mode: String, loop_start: int = 0) -> int:
 	if ends.is_empty():
 		return 0
 	var length: float = ends[ends.size() - 1]
 	var clock := maxf(time, 0.0)
-	if mode == LOOP:
-		clock = fmod(clock, length)
+	if mode == LOOP and clock >= length:
+		var start := 0.0 if loop_start <= 0 else float(ends[mini(loop_start, ends.size()) - 1])
+		var span := length - start
+		clock = start + (fmod(clock - start, span) if span > 0.0 else 0.0)
 	for index in ends.size():
 		if clock < float(ends[index]):
 			return index

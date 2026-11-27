@@ -27,6 +27,8 @@ func _initialize() -> void:
 		_test_prologue_art_exists()
 	_test_line_wrap()
 	_test_frame_strip()
+	_test_anim_spec_sync()
+	_test_move_classes()
 	_test_vfx_settings()
 	_test_delivered_strips()
 	print("\n測試結果：通過 %d，失敗 %d" % [_passed, _failed])
@@ -317,7 +319,50 @@ func _test_frame_strip() -> void:
 		held.append(FrameStrip.frame_at(step * 0.1 + 0.01, even, FrameStrip.HOLD))
 	_check(looped == [0, 1, 2, 3, 0, 1, 2], "循環的動作播完接回第一格", str(looped))
 	_check(held == [0, 1, 2, 3, 3, 3, 3], "不循環的動作停在最後一格", str(held))
+	# 前兩格是進場，之後從第三格（從 1 算起）開始循環
+	var entry := FrameStrip.timing(5, 0.5, 0.0, {"loop_from": 3})
+	var entered: Array = []
+	for step in 10:
+		entered.append(FrameStrip.frame_at(step * 0.1 + 0.01, entry["ends"], FrameStrip.LOOP, entry["loop_start"]))
+	_check(entry["has_loop_from"] and entered == [0, 1, 2, 3, 4, 2, 3, 4, 2, 3], "進場只播一次，之後從指定的那一格起循環", str(entered))
 	_check(FrameStrip.region(2, 512) == Rect2(1024, 0, 512, 512), "第三格的位置在兩格寬之後")
+
+
+## 遊戲裡各動作預設的長度，要和規格檔 tools/anim_spec.json 寫的一樣；動畫契約也要對得上。
+func _test_anim_spec_sync() -> void:
+	var spec: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://tools/anim_spec.json"))
+	if not spec is Dictionary:
+		_check(false, "讀得到動作規格 tools/anim_spec.json")
+		return
+	var actor := load("res://scenes/battle/battle_actor.gd")
+	var lengths: Dictionary = actor.STRIP_LENGTH
+	var wrong: Array[String] = []
+	for anim: String in spec["actions"]:
+		var expected := float(spec["actions"][anim]["default"])
+		var have: float = float(lengths[anim]) if lengths.has(anim) else float(actor.CLASS_LENGTH.get(spec["actions"][anim].get("class", ""), -1.0))
+		if not is_equal_approx(have, expected):
+			wrong.append("%s：遊戲 %s、規格 %s" % [anim, have, expected])
+	_check(wrong.is_empty(), "各動作預設的長度和動作規格一致", "；".join(wrong))
+	var missing: Array[String] = []
+	for anim: String in GameData.ANIMS:
+		if not (spec["actions"] as Dictionary).has(anim):
+			missing.append(anim)
+	_check(missing.is_empty(), "動畫契約裡的每個動作在規格裡都有張數", "缺：" + "、".join(missing))
+
+
+## 每個招式都有分級；寫錯會被抓出來。
+func _test_move_classes() -> void:
+	var classes: Dictionary = {}
+	for move_id: String in _data.moves:
+		classes[str(_data.moves[move_id].get("class", ""))] = true
+	_check(classes.has("basic") and classes.has("skill") and classes.has("ultimate") and classes.size() == 3,
+		"招式分成普攻、小招、大招三級", str(classes.keys()))
+	var checker := GameData.new()
+	checker.load_all()
+	checker.moves["shen_dianxing"]["class"] = "big"
+	checker.errors.clear()
+	checker._validate()
+	_check(checker.errors.size() == 1 and "class" in checker.errors[0], "抓得到寫錯的招式分級", "；".join(checker.errors))
 
 
 ## 特效的播放設定：每個招式用的特效、戰鬥畫面固定會用的特效，都要有設定。

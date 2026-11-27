@@ -15,8 +15,10 @@ const MOVE_KINDS := ["attack", "heal", "buff", "control"]
 const FORCES := ["gang", "rou", "kuai", ""]
 const ANIMS := [
 	"idle", "ready", "charge", "attack_light", "attack_heavy", "cast",
-	"hit", "guard", "stagger", "down", "victory", "walk",
+	"hit", "hit_heavy", "guard", "stagger", "down", "victory", "walk",
 ]
+## 招式的分級：普攻、小招、大招。決定對手挨打的反應（輕或重的受擊）、命中時畫面停多久、大招出手前播特寫。
+const MOVE_CLASSES := ["basic", "skill", "ultimate"]
 const REACHES := ["melee", "ranged", "self"]
 ## 多個招式共用的特效（設計文件 15.9）。招式的 fx 欄位填這裡的其中一個；
 ## 有專屬特效的招式（絕招）則填招式自己的識別碼。
@@ -36,7 +38,6 @@ var texts: Dictionary = {}
 ##   impact_frame  第幾格是命中的瞬間（從 1 算起，可省略）；美術可以在 assets/vfx/meta.json 改寫
 ##   own_size      套在人身上的特效預設會跟著那個人的格子放大（首領是 1.5 倍）；
 ##                 為某一個人量身畫的填 true，照原尺寸顯示
-##   frames        建議的格數，只給需求清單用
 var vfx: Dictionary = {}
 var errors: Array[String] = []
 
@@ -109,6 +110,7 @@ func _validate() -> void:
 			continue
 		_require_text(m, "name", where)
 		_require_enum(m, "kind", MOVE_KINDS, where)
+		_require_enum(m, "class", MOVE_CLASSES, where)
 		_require_enum(m, "force", FORCES, where)
 		_require_enum(m, "anim", ANIMS, where)
 		_require_enum(m, "reach", REACHES, where)
