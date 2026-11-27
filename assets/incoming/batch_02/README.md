@@ -19,4 +19,11 @@
 - preview/cutin_preview.jpg
 - QA.md（逐項量測）
 
-> Git 同步中：大招本體和大招特效的連號單格圖正在傳入；預覽與量測已完成。完整素材同步後會更新此註記。
+
+## Godot 檔案讀取檢查
+
+Godot 4.7.2 headless 使用 Image.load_from_file 實際載入 180 格，9 組尺寸全數正確，橫排圖寬不超過 16384。此項僅確認貼圖可讀，並非正式戰鬥場景的 GPU 驗收。
+
+## 製作來源
+
+source/keyposes.zip 包含壓縮色盤版繪製關鍵姿勢與正規化圖，供下次修正使用。解壓至 characters/shen_peak/source/ 可搭配 source 下的 landmarks.json、build_animation.py、build_fx.py 使用。壓縮色盤版重建後的像素可能略有差異；正式交付幀為 frames、cutin、vfx 目錄的 PNG。預覽程式 source/preview.py 接收當地遊戲專案路徑。
