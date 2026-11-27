@@ -1,0 +1,67 @@
+{
+  "action": "attack_light",
+  "move": "shen_dianxing",
+  "title": "點星",
+  "stage": "keypose_timing_design",
+  "note": "原畫階段的時間表，不是合格動畫 meta；補間完成後仍須驗收。",
+  "frame_index_base": 1,
+  "target_unique": 16,
+  "playback_frames": 17,
+  "timings_ms": [
+    42,
+    83,
+    83,
+    42,
+    42,
+    42,
+    42,
+    42,
+    83,
+    42,
+    42,
+    42,
+    83,
+    42,
+    83,
+    42,
+    83
+  ],
+  "impact_frame": 9,
+  "keys": [
+    {
+      "frame": 1,
+      "key": "K0",
+      "pose": "原站姿基準"
+    },
+    {
+      "frame": 5,
+      "key": "K1",
+      "pose": "收劍預備到頂，重心微後收"
+    },
+    {
+      "frame": 7,
+      "key": "K2",
+      "pose": "刺出途中，肘尚未全伸"
+    },
+    {
+      "frame": 9,
+      "key": "K3",
+      "pose": "命中，肩肘腕與直劍連續"
+    },
+    {
+      "frame": 11,
+      "key": "K4",
+      "pose": "餘勢，衣髮仍往後隨動"
+    },
+    {
+      "frame": 14,
+      "key": "K5",
+      "pose": "回收途中，衣擺回彈"
+    },
+    {
+      "frame": 17,
+      "key": "K0",
+      "pose": "回到原站姿；重用基準不重計不同圖"
+    }
+  ]
+}

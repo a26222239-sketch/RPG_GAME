@@ -1,0 +1,739 @@
+{
+  "schema_version": 1,
+  "date": "2026-11-27",
+  "character": "shen_peak",
+  "scope": "巔峰版沈清禾完整戰鬥套件；三年前版本 shen 不自動算完成",
+  "source_spec": "tools/anim_spec.json @ 08ea0e98f872d14b116d55898a246709b0d0d279",
+  "status_policy": "只有 technical、visual、runtime 通過且 owner accepted 才列 accepted；原畫、輸出格數及可執行均不能替代完成",
+  "totals": {
+    "groups": 25,
+    "min_unique": 340,
+    "target_unique": 424
+  },
+  "assets": [
+    {
+      "key": "body.idle",
+      "category": "body",
+      "id": "idle",
+      "title": "待機",
+      "kind": "idle",
+      "priority": "P1",
+      "decision": "重評舊稿",
+      "design": "呼吸與獨立衣髮跟隨",
+      "min_unique": 12,
+      "target_unique": 16,
+      "duration": [
+        1.2,
+        1.8
+      ],
+      "frame_size": [
+        512,
+        512
+      ],
+      "output": "characters/shen_peak/frames/idle_01.png",
+      "stage": "not_started",
+      "qa": {
+        "technical": "not_run",
+        "visual": "not_reviewed",
+        "runtime": "not_run",
+        "owner": "not_reviewed"
+      },
+      "source_artifacts": []
+    },
+    {
+      "key": "body.ready",
+      "category": "body",
+      "id": "ready",
+      "title": "準備出手",
+      "kind": "ready",
+      "priority": "P1",
+      "decision": "新製",
+      "design": "低重心備戰循環",
+      "min_unique": 8,
+      "target_unique": 10,
+      "duration": [
+        0.8,
+        1.2
+      ],
+      "frame_size": [
+        512,
+        512
+      ],
+      "output": "characters/shen_peak/frames/ready_01.png",
+      "stage": "not_started",
+      "qa": {
+        "technical": "not_run",
+        "visual": "not_reviewed",
+        "runtime": "not_run",
+        "owner": "not_reviewed"
+      },
+      "source_artifacts": []
+    },
+    {
+      "key": "body.charge",
+      "category": "body",
+      "id": "charge",
+      "title": "蓄招",
+      "kind": "charge",
+      "priority": "P1",
+      "decision": "新製",
+      "design": "4 格進場後循環，氣流抬起衣髮",
+      "min_unique": 12,
+      "target_unique": 14,
+      "duration": [
+        0.8,
+        1.6
+      ],
+      "frame_size": [
+        512,
+        512
+      ],
+      "output": "characters/shen_peak/frames/charge_01.png",
+      "stage": "not_started",
+      "qa": {
+        "technical": "not_run",
+        "visual": "not_reviewed",
+        "runtime": "not_run",
+        "owner": "not_reviewed"
+      },
+      "source_artifacts": []
+    },
+    {
+      "key": "body.attack_light",
+      "category": "body",
+      "id": "attack_light",
+      "title": "點星（普攻）",
+      "kind": "attack_light",
+      "priority": "P0",
+      "decision": "重作",
+      "design": "短促單次前刺：收劍、伸展、命中、回收",
+      "min_unique": 14,
+      "target_unique": 16,
+      "duration": [
+        0.6,
+        1
+      ],
+      "frame_size": [
+        512,
+        512
+      ],
+      "output": "characters/shen_peak/frames/attack_light_01.png",
+      "stage": "keyposes_in_progress",
+      "qa": {
+        "technical": "not_run",
+        "visual": "not_reviewed",
+        "runtime": "not_run",
+        "owner": "not_reviewed"
+      },
+      "source_artifacts": []
+    },
+    {
+      "key": "body.shen_duanliu",
+      "category": "body",
+      "id": "shen_duanliu",
+      "title": "斷流（小招）",
+      "kind": "attack_heavy",
+      "priority": "P0",
+      "decision": "新製",
+      "design": "先格開再截斬，路徑與點星區別",
+      "min_unique": 20,
+      "target_unique": 24,
+      "duration": [
+        0.9,
+        1.4
+      ],
+      "frame_size": [
+        512,
+        512
+      ],
+      "output": "characters/shen_peak/frames/shen_duanliu_01.png",
+      "stage": "not_started",
+      "qa": {
+        "technical": "not_run",
+        "visual": "not_reviewed",
+        "runtime": "not_run",
+        "owner": "not_reviewed"
+      },
+      "source_artifacts": []
+    },
+    {
+      "key": "body.shen_feihua",
+      "category": "body",
+      "id": "shen_feihua",
+      "title": "雲棧飛花（小招）",
+      "kind": "attack_heavy",
+      "priority": "P0",
+      "decision": "新製",
+      "design": "較大橫掃展開扇形劍氣，屬遠攻",
+      "min_unique": 20,
+      "target_unique": 24,
+      "duration": [
+        0.9,
+        1.4
+      ],
+      "frame_size": [
+        512,
+        512
+      ],
+      "output": "characters/shen_peak/frames/shen_feihua_01.png",
+      "stage": "not_started",
+      "qa": {
+        "technical": "not_run",
+        "visual": "not_reviewed",
+        "runtime": "not_run",
+        "owner": "not_reviewed"
+      },
+      "source_artifacts": []
+    },
+    {
+      "key": "body.shen_qingshen",
+      "category": "body",
+      "id": "shen_qingshen",
+      "title": "輕身訣（小招）",
+      "kind": "cast",
+      "priority": "P0",
+      "decision": "新製",
+      "design": "非攻擊；持劍手穩定，自由手運氣與輕盈氣流",
+      "min_unique": 20,
+      "target_unique": 24,
+      "duration": [
+        0.9,
+        1.4
+      ],
+      "frame_size": [
+        512,
+        512
+      ],
+      "output": "characters/shen_peak/frames/shen_qingshen_01.png",
+      "stage": "not_started",
+      "qa": {
+        "technical": "not_run",
+        "visual": "not_reviewed",
+        "runtime": "not_run",
+        "owner": "not_reviewed"
+      },
+      "source_artifacts": []
+    },
+    {
+      "key": "body.shen_qianren",
+      "category": "body",
+      "id": "shen_qianren",
+      "title": "雲棧・千仞（大招）",
+      "kind": "ultimate",
+      "priority": "P0",
+      "decision": "重作",
+      "design": "專屬架式與多段快速連劍，禁止只把普攻放大",
+      "min_unique": 32,
+      "target_unique": 40,
+      "duration": [
+        1.4,
+        2.2
+      ],
+      "frame_size": [
+        512,
+        512
+      ],
+      "output": "characters/shen_peak/frames/shen_qianren_01.png",
+      "stage": "not_started",
+      "qa": {
+        "technical": "not_run",
+        "visual": "not_reviewed",
+        "runtime": "not_run",
+        "owner": "not_reviewed"
+      },
+      "source_artifacts": []
+    },
+    {
+      "key": "body.hit",
+      "category": "body",
+      "id": "hit",
+      "title": "輕受擊",
+      "kind": "hit",
+      "priority": "P0",
+      "decision": "重作",
+      "design": "首格立即受力、短回彈、恢復",
+      "min_unique": 8,
+      "target_unique": 10,
+      "duration": [
+        0.35,
+        0.55
+      ],
+      "frame_size": [
+        512,
+        512
+      ],
+      "output": "characters/shen_peak/frames/hit_01.png",
+      "stage": "not_started",
+      "qa": {
+        "technical": "not_run",
+        "visual": "not_reviewed",
+        "runtime": "not_run",
+        "owner": "not_reviewed"
+      },
+      "source_artifacts": []
+    },
+    {
+      "key": "body.hit_heavy",
+      "category": "body",
+      "id": "hit_heavy",
+      "title": "重受擊",
+      "kind": "hit_heavy",
+      "priority": "P0",
+      "decision": "重作",
+      "design": "更大的失衡與衣髮反甩，但不自行畫世界位移",
+      "min_unique": 14,
+      "target_unique": 18,
+      "duration": [
+        0.7,
+        1.1
+      ],
+      "frame_size": [
+        512,
+        512
+      ],
+      "output": "characters/shen_peak/frames/hit_heavy_01.png",
+      "stage": "not_started",
+      "qa": {
+        "technical": "not_run",
+        "visual": "not_reviewed",
+        "runtime": "not_run",
+        "owner": "not_reviewed"
+      },
+      "source_artifacts": []
+    },
+    {
+      "key": "body.guard",
+      "category": "body",
+      "id": "guard",
+      "title": "守勢",
+      "kind": "guard",
+      "priority": "P1",
+      "decision": "新製",
+      "design": "4 格進場後防禦呼吸循環",
+      "min_unique": 10,
+      "target_unique": 12,
+      "duration": [
+        0.6,
+        1.2
+      ],
+      "frame_size": [
+        512,
+        512
+      ],
+      "output": "characters/shen_peak/frames/guard_01.png",
+      "stage": "not_started",
+      "qa": {
+        "technical": "not_run",
+        "visual": "not_reviewed",
+        "runtime": "not_run",
+        "owner": "not_reviewed"
+      },
+      "source_artifacts": []
+    },
+    {
+      "key": "body.stagger",
+      "category": "body",
+      "id": "stagger",
+      "title": "破綻",
+      "kind": "stagger",
+      "priority": "P2",
+      "decision": "新製",
+      "design": "失去架式與恢復不及的循環",
+      "min_unique": 10,
+      "target_unique": 12,
+      "duration": [
+        0.9,
+        1.3
+      ],
+      "frame_size": [
+        512,
+        512
+      ],
+      "output": "characters/shen_peak/frames/stagger_01.png",
+      "stage": "not_started",
+      "qa": {
+        "technical": "not_run",
+        "visual": "not_reviewed",
+        "runtime": "not_run",
+        "owner": "not_reviewed"
+      },
+      "source_artifacts": []
+    },
+    {
+      "key": "body.down",
+      "category": "body",
+      "id": "down",
+      "title": "倒下",
+      "kind": "down",
+      "priority": "P2",
+      "decision": "新製",
+      "design": "10 格倒下後喘息循環",
+      "min_unique": 16,
+      "target_unique": 20,
+      "duration": [
+        0.6,
+        1.6
+      ],
+      "frame_size": [
+        512,
+        512
+      ],
+      "output": "characters/shen_peak/frames/down_01.png",
+      "stage": "not_started",
+      "qa": {
+        "technical": "not_run",
+        "visual": "not_reviewed",
+        "runtime": "not_run",
+        "owner": "not_reviewed"
+      },
+      "source_artifacts": []
+    },
+    {
+      "key": "body.victory",
+      "category": "body",
+      "id": "victory",
+      "title": "勝利",
+      "kind": "victory",
+      "priority": "P2",
+      "decision": "新製",
+      "design": "完整收劍及放鬆，與待機分開",
+      "min_unique": 12,
+      "target_unique": 16,
+      "duration": [
+        1,
+        1.6
+      ],
+      "frame_size": [
+        512,
+        512
+      ],
+      "output": "characters/shen_peak/frames/victory_01.png",
+      "stage": "not_started",
+      "qa": {
+        "technical": "not_run",
+        "visual": "not_reviewed",
+        "runtime": "not_run",
+        "owner": "not_reviewed"
+      },
+      "source_artifacts": []
+    },
+    {
+      "key": "body.walk",
+      "category": "body",
+      "id": "walk",
+      "title": "行走",
+      "kind": "walk",
+      "priority": "P2",
+      "decision": "新製",
+      "design": "原地步態循環，世界移動交程式",
+      "min_unique": 12,
+      "target_unique": 12,
+      "duration": [
+        0.8,
+        1
+      ],
+      "frame_size": [
+        512,
+        512
+      ],
+      "output": "characters/shen_peak/frames/walk_01.png",
+      "stage": "not_started",
+      "qa": {
+        "technical": "not_run",
+        "visual": "not_reviewed",
+        "runtime": "not_run",
+        "owner": "not_reviewed"
+      },
+      "source_artifacts": []
+    },
+    {
+      "key": "vfx.slash_sword",
+      "category": "vfx",
+      "id": "slash_sword",
+      "title": "點星劍光",
+      "kind": "strike",
+      "priority": "P0",
+      "decision": "重評舊稿",
+      "min_unique": 10,
+      "target_unique": 12,
+      "duration": [
+        0.4,
+        0.6
+      ],
+      "frame_size": [
+        512,
+        512
+      ],
+      "output": "vfx/slash_sword_01.png",
+      "stage": "not_started",
+      "qa": {
+        "technical": "not_run",
+        "visual": "not_reviewed",
+        "runtime": "not_run",
+        "owner": "not_reviewed"
+      },
+      "source_artifacts": [],
+      "requires_config": false
+    },
+    {
+      "key": "vfx.hit_spark",
+      "category": "vfx",
+      "id": "hit_spark",
+      "title": "命中火花",
+      "kind": "hit_spark",
+      "priority": "P0",
+      "decision": "重評舊稿",
+      "min_unique": 6,
+      "target_unique": 8,
+      "duration": [
+        0.25,
+        0.35
+      ],
+      "frame_size": [
+        512,
+        512
+      ],
+      "output": "vfx/hit_spark_01.png",
+      "stage": "not_started",
+      "qa": {
+        "technical": "not_run",
+        "visual": "not_reviewed",
+        "runtime": "not_run",
+        "owner": "not_reviewed"
+      },
+      "source_artifacts": [],
+      "requires_config": false
+    },
+    {
+      "key": "vfx.charge_aura",
+      "category": "vfx",
+      "id": "charge_aura",
+      "title": "蓄招氣場",
+      "kind": "aura",
+      "priority": "P1",
+      "decision": "新製",
+      "min_unique": 10,
+      "target_unique": 14,
+      "duration": [
+        0.8,
+        1.3
+      ],
+      "frame_size": [
+        512,
+        512
+      ],
+      "output": "vfx/charge_aura_01.png",
+      "stage": "not_started",
+      "qa": {
+        "technical": "not_run",
+        "visual": "not_reviewed",
+        "runtime": "not_run",
+        "owner": "not_reviewed"
+      },
+      "source_artifacts": [],
+      "requires_config": false
+    },
+    {
+      "key": "vfx.guard",
+      "category": "vfx",
+      "id": "guard",
+      "title": "防禦氣場",
+      "kind": "aura",
+      "priority": "P1",
+      "decision": "新製",
+      "min_unique": 10,
+      "target_unique": 14,
+      "duration": [
+        0.8,
+        1.3
+      ],
+      "frame_size": [
+        512,
+        512
+      ],
+      "output": "vfx/guard_01.png",
+      "stage": "not_started",
+      "qa": {
+        "technical": "not_run",
+        "visual": "not_reviewed",
+        "runtime": "not_run",
+        "owner": "not_reviewed"
+      },
+      "source_artifacts": [],
+      "requires_config": false
+    },
+    {
+      "key": "vfx.stagger_mark",
+      "category": "vfx",
+      "id": "stagger_mark",
+      "title": "破綻標記",
+      "kind": "aura",
+      "priority": "P2",
+      "decision": "新製",
+      "min_unique": 10,
+      "target_unique": 14,
+      "duration": [
+        0.8,
+        1.3
+      ],
+      "frame_size": [
+        512,
+        512
+      ],
+      "output": "vfx/stagger_mark_01.png",
+      "stage": "not_started",
+      "qa": {
+        "technical": "not_run",
+        "visual": "not_reviewed",
+        "runtime": "not_run",
+        "owner": "not_reviewed"
+      },
+      "source_artifacts": [],
+      "requires_config": false
+    },
+    {
+      "key": "vfx.shen_duanliu",
+      "category": "vfx",
+      "id": "shen_duanliu",
+      "title": "斷流專屬劍光",
+      "kind": "skill",
+      "priority": "P0",
+      "decision": "新製",
+      "min_unique": 16,
+      "target_unique": 20,
+      "duration": [
+        0.6,
+        1
+      ],
+      "frame_size": [
+        1024,
+        1024
+      ],
+      "output": "vfx/shen_duanliu_01.png",
+      "stage": "not_started",
+      "qa": {
+        "technical": "not_run",
+        "visual": "not_reviewed",
+        "runtime": "not_run",
+        "owner": "not_reviewed"
+      },
+      "source_artifacts": [],
+      "requires_config": true
+    },
+    {
+      "key": "vfx.shen_feihua",
+      "category": "vfx",
+      "id": "shen_feihua",
+      "title": "雲棧飛花扇形劍氣",
+      "kind": "skill",
+      "priority": "P0",
+      "decision": "新製",
+      "min_unique": 16,
+      "target_unique": 20,
+      "duration": [
+        0.6,
+        1
+      ],
+      "frame_size": [
+        1024,
+        1024
+      ],
+      "output": "vfx/shen_feihua_01.png",
+      "stage": "not_started",
+      "qa": {
+        "technical": "not_run",
+        "visual": "not_reviewed",
+        "runtime": "not_run",
+        "owner": "not_reviewed"
+      },
+      "source_artifacts": [],
+      "requires_config": true
+    },
+    {
+      "key": "vfx.shen_qingshen",
+      "category": "vfx",
+      "id": "shen_qingshen",
+      "title": "輕身訣自身增益",
+      "kind": "support",
+      "priority": "P0",
+      "decision": "新製",
+      "min_unique": 12,
+      "target_unique": 16,
+      "duration": [
+        0.7,
+        1
+      ],
+      "frame_size": [
+        512,
+        512
+      ],
+      "output": "vfx/shen_qingshen_01.png",
+      "stage": "not_started",
+      "qa": {
+        "technical": "not_run",
+        "visual": "not_reviewed",
+        "runtime": "not_run",
+        "owner": "not_reviewed"
+      },
+      "source_artifacts": [],
+      "requires_config": true
+    },
+    {
+      "key": "vfx.shen_qianren",
+      "category": "vfx",
+      "id": "shen_qianren",
+      "title": "千仞連劍特效",
+      "kind": "ultimate",
+      "priority": "P0",
+      "decision": "重評舊稿",
+      "min_unique": 24,
+      "target_unique": 30,
+      "duration": [
+        1,
+        1.6
+      ],
+      "frame_size": [
+        1024,
+        1024
+      ],
+      "output": "vfx/shen_qianren_01.png",
+      "stage": "not_started",
+      "qa": {
+        "technical": "not_run",
+        "visual": "not_reviewed",
+        "runtime": "not_run",
+        "owner": "not_reviewed"
+      },
+      "source_artifacts": [],
+      "requires_config": false
+    },
+    {
+      "key": "cutin.shen_qianren",
+      "category": "cutin",
+      "id": "shen_qianren",
+      "title": "千仞大招特寫",
+      "kind": "cutin",
+      "priority": "P1",
+      "decision": "重評舊稿",
+      "min_unique": 6,
+      "target_unique": 8,
+      "duration": [
+        0.5,
+        0.8
+      ],
+      "frame_size": [
+        2560,
+        720
+      ],
+      "output": "characters/shen_peak/cutin/shen_qianren_01.png",
+      "stage": "not_started",
+      "qa": {
+        "technical": "not_run",
+        "visual": "not_reviewed",
+        "runtime": "not_run",
+        "owner": "not_reviewed"
+      },
+      "source_artifacts": []
+    }
+  ]
+}
